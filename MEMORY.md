@@ -1,31 +1,26 @@
-# WA Sender Pro - Project Memory & Context Tracking
+# WaForge - Project Brain & State (Compressed)
 
-> Questo file è utilizzato dal sistema per mantenere il contesto tra diverse sessioni di sviluppo e agenti, integrandosi con `claude-mem`, `wiki-brain`, e tool di compressione (`sqz`).
+> File di contesto persistente. Compresso e ottimizzato tramite best practices (cavemanv, sqz, lean-ctx).
 
-## 📌 Stato Attuale (Giugno 2026)
+## 📌 Identità & Architettura
+- **Nome:** WaForge (ex WA Sender Pro).
+- **Modello:** SaaS Multi-Tenant (B2B). I team/agenzie sono isolati tramite `teamId`.
+- **Stack:** Nuxt 4 (Vue 3, Nitro) + PostgreSQL + Prisma v5.22.0.
+- **UI/UX:** Design premium (Glassmorphism, TailwindCSS, Color Mode).
+- **Core Engine:** Astrazione multi-provider WuzAPI / go-whatsapp-web-multidevice (in `lib/whatsapp-engine.ts`).
 
-- **Progetto:** Dashboard per invio massivo WhatsApp (WA Sender Pro).
-- **Architettura (MIGRAZIONE IN CORSO):** Passaggio da Next.js a **Nuxt.js (Vue 3, Nitro)**.
-- **Moduli Attivi:** `@nuxtjs/tailwindcss`, `@nuxtjs/color-mode` (Dark/Light), `@nuxtjs/i18n` (Multi-lingua IT/EN), `pinia` (State Management).
-- **Backend WhatsApp:** Astrazione doppia in `lib/whatsapp-engine.ts` per supportare sia `WuzAPI` che `go-whatsapp-web-multidevice`.
-- **UI/UX:** Stile moderno (Premium Apple/Google, Glassmorphism). Schermate generate con Google Stitch (Dashboard, Connect QR, Impostazioni, API Status). Skeleton loaders via `phantom-ui`.
-- **Debug:** Implementato `DebugWidget.vue` fluttuante, visibile solo in ambiente dev.
+## 🧠 Stato dello Sviluppo & Risoluzioni (Giugno 2026)
+- **Database Migrato:** Passaggio completato da SQLite a PostgreSQL.
+- **Fix Prisma/Nitro:** Risolto conflitto fatale tra Prisma v7.8.0 e il bundler Nitro Edge. Prisma e `@prisma/client` sono stati stabilizzati alla **v5.22.0**, con `url` reimpostato nello `schema.prisma`. Questo assicura connessioni dirette (senza necessità di adapter o accelerateUrl) e previene crash runtime in HMR.
+- **Autenticazione (API):** L'endpoint `/api/auth/register` è testato e funzionante. Crea correttamente l'utente, cifra la password (bcrypt), crea il `Team` associato, genera un `TeamMembership` (ruolo OWNER) e restituisce un cookie JWT contenente `userId` e `teamId`.
 
-## 📝 Decisioni Architetturali (ADR)
+## 🚀 Prossimi Step Immediati (Next Actions)
+1. **Frontend Auth:** Creare le pagine UI moderne per `/login` e `/register` (ispirate ai mockup premium).
+2. **Auth Guard:** Implementare il middleware globale Nuxt (`middleware/auth.global.ts`) per proteggere il workspace (Dashboard, Rubrica, Campagne).
+3. **Store Management:** Integrare Pinia (`stores/auth.ts`) per gestire l'idratazione dello stato utente/team al refresh della pagina tramite `/api/auth/me`.
+4. **Isolamento API Backend:** Modificare tutti i controller CRUD (Contatti, Campagne, Connessione WA) per filtrare rigorosamente le query usando il `teamId` estratto dal JWT.
 
-1. **Framework (Vue/Nuxt):** Scelto per reattività migliore e preferenza utente, mantenendo l'engine backend intatto.
-2. **i18n & Theme:** Configurato a livello di root tramite moduli Nuxt per evitare re-render lenti.
-3. **Database:** PostgreSQL con Prisma, logica migrata verso le API routes di Nitro (`server/api`). Include supporto Multi-Tenancy (Team).
-4. **Validazione:** Zod per la sanificazione degli input (OWASP-compliant).
-
-## 🚀 Prossimi Passi (Next Actions)
-
-- [ ] Sviluppare interamente i componenti UI Vue basandosi sui mockup generati in Stitch.
-- [ ] Completare il porting delle API da Next.js a Nuxt Nitro.
-- [ ] Script di migrazione CSV per vecchi database (gestione float "0.0").
-
-## 🧠 Workflow & Memory Compression
-
-- Eseguito `ai-squeeze` per mantenere la history dei token ottimizzata.
-- Rispettare sempre il workflow delineato in `auto-workflow`.
-- Tutte le query al database *devono* passare tramite Prisma per evitare SQLi.
+## ⚠️ Regole Invariabili (Constraints)
+- **Niente Edge Client:** Evitare aggiornamenti di Prisma che impongano l'architettura edge senza driver adapter.
+- **Data Leakage:** Nessuna query backend deve omettere la clausola `where: { teamId: user.teamId }`.
+- **Workflow:** Pianificare (Plan), Eseguire, Verificare prima di confermare.

@@ -24,6 +24,9 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    externals: {
+      external: ['@prisma/client']
+    },
     experimental: {
       database: true,
       websocket: true

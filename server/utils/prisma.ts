@@ -3,7 +3,7 @@
  * Avoids exhausting database connections during HMR in development.
  */
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client/index.js'
 
 let prisma: PrismaClient
 
@@ -24,20 +24,20 @@ const getDbUrl = () => {
   const pass = process.env.POSTGRES_PASSWORD || 'postgres'
   const host = process.env.POSTGRES_HOST || 'localhost'
   const port = process.env.POSTGRES_PORT || '5432'
-  const db = process.env.POSTGRES_DB || 'wasender' // O 'waforge' se preferisci
+  const db = process.env.POSTGRES_DB || 'waforge'
 
   return `postgresql://${user}:${pass}@${host}:${port}/${db}?schema=public`
 }
 
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient({
-    datasourceUrl: getDbUrl(),
+
     log: ['error']
   })
 } else {
   if (!globalThis.__prisma) {
     globalThis.__prisma = new PrismaClient({
-      datasourceUrl: getDbUrl(),
+
       log: ['query', 'error', 'warn'],
     })
   }

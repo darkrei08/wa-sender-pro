@@ -2,7 +2,7 @@ services:
   # ─── WuzAPI — WhatsApp Engine (Go + whatsmeow) ───────────────────────────
   wuzapi:
     image: asternic/wuzapi:latest
-    container_name: wa-sender-wuzapi
+    container_name: waforge-wuzapi
     restart: unless-stopped
     ports:
       - "3100:3100"
@@ -24,7 +24,7 @@ services:
   # Set WHATSAPP_ENGINE=gowa in the app environment below.
   # gowa:
   #   image: aldinokemal/go-whatsapp-web-multidevice:latest
-  #   container_name: wa-sender-gowa
+  #   container_name: waforge-gowa
   #   restart: unless-stopped
   #   ports:
   #     - "3000:3000"
@@ -40,7 +40,7 @@ services:
   #     timeout: 10s
   #     retries: 3
 
-  # ─── WA Sender Pro — Nuxt 3 Dashboard (Nitro Engine) ─────────────────────
+  # ─── WA Forge  — Nuxt 3 Dashboard (Nitro Engine) ─────────────────────
   # To use the pre-built image from GitHub Container Registry instead of
   # building locally, replace the `build` block with:
   #   image: ghcr.io/darkrei08/waforge:latest
@@ -49,7 +49,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: ghcr.io/darkrei08/waforge:latest
-    container_name: wa-sender-app
+    container_name: waforge-app
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -60,7 +60,7 @@ services:
       - WHATSAPP_ENGINE=${WHATSAPP_ENGINE:-wuzapi}
       - WUZAPI_URL=http://wuzapi:3100
       - WUZAPI_TOKEN=${WUZAPI_TOKEN:-secret-token}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-wasender}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-waforge}?schema=public
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - CAMPAIGN_DELAY_MAX=${CAMPAIGN_DELAY_MAX:-45}
       - MAX_MESSAGES_PER_HOUR=${MAX_MESSAGES_PER_HOUR:-100}
@@ -78,12 +78,12 @@ services:
   # ─── PostgreSQL ─────────────────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
-    container_name: wa-sender-db
+    container_name: waforge-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-wasender}
+      POSTGRES_DB: ${POSTGRES_DB:-waforge}
     ports:
       - "5432:5432"
     volumes:
@@ -99,7 +99,7 @@ services:
   # ─── Redis ──────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: wa-sender-redis
+    container_name: waforge-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
