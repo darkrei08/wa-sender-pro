@@ -33,7 +33,7 @@ USER nuxtjs
 
 EXPOSE 3000
 
-LABEL org.opencontainers.image.source="https://github.com/darkrei08/wa-sender-pro"
+LABEL org.opencontainers.image.source="https://github.com/darkrei08/waforge"
 LABEL org.opencontainers.image.description="WA Sender Pro — Dashboard WhatsApp Mass Messaging"
 LABEL org.opencontainers.image.licenses="AGPL-3.0"
 

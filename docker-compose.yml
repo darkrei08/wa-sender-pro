@@ -43,12 +43,12 @@ services:
   # ─── WA Sender Pro — Nuxt 3 Dashboard (Nitro Engine) ─────────────────────
   # To use the pre-built image from GitHub Container Registry instead of
   # building locally, replace the `build` block with:
-  #   image: ghcr.io/darkrei08/wa-sender-pro:latest
-  wa-sender-pro:
+  #   image: ghcr.io/darkrei08/waforge:latest
+  waforge:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/darkrei08/wa-sender-pro:latest
+    image: ghcr.io/darkrei08/waforge:latest
     container_name: wa-sender-app
     restart: unless-stopped
     ports:
