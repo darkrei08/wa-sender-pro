@@ -14,13 +14,13 @@ declare global {
 
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL || 'file:./data/waforge.db',
+    datasourceUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/wasender?schema=public',
     log: ['error']
   })
 } else {
   if (!globalThis.__prisma) {
     globalThis.__prisma = new PrismaClient({
-      datasourceUrl: process.env.DATABASE_URL || 'file:./data/waforge.db',
+      datasourceUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/wasender?schema=public',
       log: ['query', 'error', 'warn'],
     })
   }
