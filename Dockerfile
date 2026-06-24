@@ -4,7 +4,7 @@ FROM oven/bun:1 AS builder
 WORKDIR /app
 
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 COPY . .
 RUN bunx prisma generate
@@ -34,7 +34,7 @@ EXPOSE 3000
 
 LABEL org.opencontainers.image.source="https://github.com/darkrei08/wa-sender-pro"
 LABEL org.opencontainers.image.description="WA Sender Pro — Dashboard WhatsApp Mass Messaging"
-LABEL org.opencontainers.image.licenses="UNLICENSED"
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
 
 # Run migrations then start Nitro server
 CMD ["sh", "-c", "npx prisma migrate deploy 2>/dev/null; node .output/server/index.mjs"]
