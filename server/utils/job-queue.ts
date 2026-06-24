@@ -11,7 +11,11 @@ declare global {
   var __campaignWorker: Worker | undefined
 }
 
-export const connection = globalThis.__redis || new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+const getRedisUrl = () => {
+  return process.env.REDIS_URL || process.env['REDIS_URL'] || 'redis://localhost:6379'
+}
+
+export const connection = globalThis.__redis || new IORedis(getRedisUrl(), {
   maxRetriesPerRequest: null // Required by BullMQ
 })
 if (process.env.NODE_ENV !== 'production') globalThis.__redis = connection
