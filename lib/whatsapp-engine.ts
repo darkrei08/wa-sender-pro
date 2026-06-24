@@ -14,7 +14,6 @@ const ENGINE = (process.env.WHATSAPP_ENGINE || 'wuzapi') as 'wuzapi' | 'gowa'
 const ENDPOINTS = {
   wuzapi: {
     base: process.env.WUZAPI_URL || 'http://wuzapi:3100',
-    token: process.env.WUZAPI_TOKEN || 'secret-token',
     sendText: '/chat/send/text',
     status: '/app/status',
     qr: '/app/qrcode',
@@ -22,7 +21,6 @@ const ENDPOINTS = {
   },
   gowa: {
     base: process.env.GOWA_URL || 'http://gowa:3000',
-    token: process.env.GOWA_TOKEN || 'secret-token',
     sendText: '/app/send/message',
     status: '/app/status',
     qr: '/app/login',
@@ -45,15 +43,15 @@ interface EngineStatus {
   engine: string
 }
 
-async function apiCall(path: string, method = 'GET', body?: unknown) {
+async function apiCall(path: string, token: string, method = 'GET', body?: unknown) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    token: cfg.token,
+    token,
   }
 
   // gowa uses Authorization header
   if (ENGINE === 'gowa') {
-    headers['Authorization'] = `Bearer ${cfg.token}`
+    headers['Authorization'] = `Bearer ${token}`
   }
 
   const res = await fetch(`${cfg.base}${path}`, {
@@ -72,9 +70,9 @@ async function apiCall(path: string, method = 'GET', body?: unknown) {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export async function getEngineStatus(): Promise<EngineStatus> {
+export async function getEngineStatus(token: string): Promise<EngineStatus> {
   try {
-    const data = await apiCall(cfg.status)
+    const data = await apiCall(cfg.status, token)
 
     if (ENGINE === 'wuzapi') {
       return {
@@ -96,9 +94,9 @@ export async function getEngineStatus(): Promise<EngineStatus> {
   }
 }
 
-export async function getQRCode(): Promise<string | null> {
+export async function getQRCode(token: string): Promise<string | null> {
   try {
-    const data = await apiCall(cfg.qr)
+    const data = await apiCall(cfg.qr, token)
     return data.data?.QRCode ?? data.QRCode ?? null
   } catch {
     return null
@@ -106,6 +104,7 @@ export async function getQRCode(): Promise<string | null> {
 }
 
 export async function sendMessage(
+  token: string,
   phone: string,
   message: string
 ): Promise<SendResult> {
@@ -125,7 +124,7 @@ export async function sendMessage(
       }
     }
 
-    const data = await apiCall(cfg.sendText, 'POST', body)
+    const data = await apiCall(cfg.sendText, token, 'POST', body)
     const msgId = data.data?.Id ?? data.MessageId ?? 'ok'
     return { success: true, messageId: msgId }
   } catch (err) {
@@ -133,8 +132,8 @@ export async function sendMessage(
   }
 }
 
-export async function disconnectEngine(): Promise<void> {
-  await apiCall(cfg.logout, 'POST')
+export async function disconnectEngine(token: string): Promise<void> {
+  await apiCall(cfg.logout, token, 'POST')
 }
 
 /** Render template: replace {{Variable}} with contact field values */

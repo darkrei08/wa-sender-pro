@@ -1,184 +1,169 @@
-/**
- * Job Queue for Bulk WhatsApp Message Sending
- *
- * SQLite-backed async queue with:
- * - Anti-ban jitter (randomized delays)
- * - Spintax message variation
- * - Pause/Resume support
- * - Campaign progress tracking
- */
-
+import { Queue, Worker, Job } from 'bullmq'
+import IORedis from 'ioredis'
 import { prisma } from './prisma'
 import { sendMessage, renderTemplate } from '~/lib/whatsapp-engine'
 import { expandSpintax } from '~/lib/spintax'
-import { securityLog } from '~/lib/security-logger'
 
-interface QueueJob {
-  campaignId: string
-  running: boolean
+// Gestione Singleton per HMR di Nuxt in sviluppo
+declare global {
+  var __redis: IORedis | undefined
+  var __campaignQueue: Queue | undefined
+  var __campaignWorker: Worker | undefined
 }
 
-const activeJobs = new Map<string, QueueJob>()
+export const connection = globalThis.__redis || new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null // Required by BullMQ
+})
+if (process.env.NODE_ENV !== 'production') globalThis.__redis = connection
 
-/**
- * Start processing a campaign — sends messages with jitter delays
- */
-export async function startCampaign(campaignId: string): Promise<void> {
-  // Prevent double-start
-  if (activeJobs.has(campaignId)) return
+export const campaignQueue = globalThis.__campaignQueue || new Queue('campaigns', { connection })
+if (process.env.NODE_ENV !== 'production') globalThis.__campaignQueue = campaignQueue
 
+// ── Worker (Processore in Background) ────────────────────────────────────────
+
+export const campaignWorker = globalThis.__campaignWorker || new Worker('campaigns', async (job: Job) => {
+  const { campaignId, contactId, teamId } = job.data
+
+  // Verifica che la campagna sia ancora in RUNNING
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },
-    include: { template: true },
+    include: { template: true }
   })
-
-  if (!campaign || !campaign.template) {
-    throw new Error(`Campaign ${campaignId} not found`)
+  
+  if (!campaign || campaign.status !== 'RUNNING') {
+    // Se in pausa, il job viene ignorato (verrà reinserito al resume)
+    return { skipped: true, reason: 'Campaign not running' }
   }
 
-  // Resolve contacts
+  const contact = await prisma.contact.findUnique({ where: { id: contactId } })
+  if (!contact) return { skipped: true, reason: 'Contact not found' }
+
+  // Recupera la sessione WuzAPI associata a questo specifico Team!
+  const session = await prisma.whatsAppSession.findFirst({ where: { teamId } })
+  if (!session || !session.token) {
+    throw new Error(`WhatsApp Session not connected for team ${teamId}`)
+  }
+
+  // Rendering template e Spintax
+  let body = renderTemplate(campaign.template.body, {
+    Name: contact.name,
+    Phone: contact.fullPhone,
+    Email: contact.email,
+    Company: contact.company,
+  })
+  if (process.env.SPINTAX_ENABLED !== 'false') {
+    body = expandSpintax(body)
+  }
+
+  // Chiamata all'Engine Multi-Tenant
+  const result = await sendMessage(session.token, contact.fullPhone, body)
+
+  // Registra il risultato del messaggio
+  await prisma.message.create({
+    data: {
+      contactId,
+      campaignId,
+      body,
+      status: result.success ? 'SENT' : 'FAILED',
+      errorReason: result.error || null,
+      wuzapiMsgId: result.messageId || null,
+      sentAt: result.success ? new Date() : null,
+    }
+  })
+
+  // Aggiorna i contatori live della campagna
+  await prisma.campaign.update({
+    where: { id: campaignId },
+    data: result.success 
+      ? { sentCount: { increment: 1 } }
+      : { failedCount: { increment: 1 } }
+  })
+
+  // Se è l'ultimo messaggio, potremmo segnare la campagna come completata
+  // (per semplicità lasciamo a un job di cleanup o al frontend)
+  return { success: result.success, messageId: result.messageId }
+
+}, { connection, concurrency: 5 })
+
+if (process.env.NODE_ENV !== 'production') globalThis.__campaignWorker = campaignWorker
+
+// ── Azioni Pubbliche ─────────────────────────────────────────────────────────
+
+export async function startCampaign(campaignId: string, teamId: string) {
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId, teamId }
+  })
+  if (!campaign) throw new Error('Campaign not found')
+
+  // Trova i contatti (escludendo quelli che hanno già ricevuto un messaggio per questa campagna)
   let contacts
   if (campaign.contactIds === 'ALL') {
-    contacts = await prisma.contact.findMany({ where: { isActive: true } })
+    contacts = await prisma.contact.findMany({ where: { teamId, isActive: true } })
   } else {
-    const ids: string[] = JSON.parse(campaign.contactIds)
+    const ids = JSON.parse(campaign.contactIds)
     contacts = await prisma.contact.findMany({
-      where: { id: { in: ids }, isActive: true },
+      where: { id: { in: ids }, teamId, isActive: true }
     })
   }
 
-  // Update campaign status
+  // Trova quali contatti hanno già un messaggio per questa campagna (utile per il Resume)
+  const existingMessages = await prisma.message.findMany({
+    where: { campaignId },
+    select: { contactId: true }
+  })
+  const processedContactIds = new Set(existingMessages.map(m => m.contactId))
+  const remainingContacts = contacts.filter(c => !processedContactIds.has(c.id))
+
+  if (remainingContacts.length === 0) {
+    // Già finita
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: { status: 'COMPLETED', completedAt: new Date() }
+    })
+    return
+  }
+
   await prisma.campaign.update({
     where: { id: campaignId },
     data: {
       status: 'RUNNING',
       totalCount: contacts.length,
-      sentCount: 0,
-      failedCount: 0,
-      startedAt: new Date(),
-    },
+      startedAt: campaign.startedAt || new Date()
+    }
   })
 
-  const job: QueueJob = { campaignId, running: true }
-  activeJobs.set(campaignId, job)
+  // Calcola i delay incrementali (Jitter Anti-Ban)
+  const delayMin = campaign.delayMin * 1000
+  const delayMax = campaign.delayMax * 1000
+  let cumulativeDelay = 0
 
-  securityLog.campaignStarted(campaignId, contacts.length)
-
-  // Check if spintax is enabled
-  const spintaxEnabled = process.env.SPINTAX_ENABLED !== 'false'
-
-  // Process contacts sequentially with jitter
-  for (const contact of contacts) {
-    // Check if paused
-    if (!job.running) {
-      await prisma.campaign.update({
-        where: { id: campaignId },
-        data: { status: 'PAUSED' },
-      })
-      activeJobs.delete(campaignId)
-      return
-    }
-
-    // Render template with contact fields
-    let messageBody = renderTemplate(campaign.template.body, {
-      Name: contact.name,
-      name: contact.name,
-      Phone: contact.fullPhone,
-      phone: contact.fullPhone,
-      Email: contact.email,
-      email: contact.email,
-      Company: contact.company,
-      company: contact.company,
-    })
-
-    // Apply spintax if enabled
-    if (spintaxEnabled) {
-      messageBody = expandSpintax(messageBody)
-    }
-
-    // Send message
-    const result = await sendMessage(contact.fullPhone, messageBody)
-
-    // Log message result
-    await prisma.message.create({
-      data: {
-        contactId: contact.id,
-        campaignId: campaign.id,
-        body: messageBody,
-        status: result.success ? 'SENT' : 'FAILED',
-        errorReason: result.error || null,
-        wuzapiMsgId: result.messageId || null,
-        sentAt: result.success ? new Date() : null,
-      },
-    })
-
-    // Update campaign counters
-    if (result.success) {
-      await prisma.campaign.update({
-        where: { id: campaignId },
-        data: { sentCount: { increment: 1 } },
-      })
-    } else {
-      await prisma.campaign.update({
-        where: { id: campaignId },
-        data: { failedCount: { increment: 1 } },
-      })
-    }
-
-    // Anti-ban jitter: random delay between messages
-    const delayMin = campaign.delayMin * 1000
-    const delayMax = campaign.delayMax * 1000
+  const jobs = remainingContacts.map(contact => {
     const jitter = delayMin + Math.random() * (delayMax - delayMin)
-    await new Promise(resolve => setTimeout(resolve, jitter))
-  }
-
-  // Campaign complete
-  await prisma.campaign.update({
-    where: { id: campaignId },
-    data: {
-      status: 'COMPLETED',
-      completedAt: new Date(),
-    },
+    cumulativeDelay += jitter
+    return {
+      name: 'send-message',
+      data: { campaignId, contactId: contact.id, teamId },
+      opts: { delay: Math.floor(cumulativeDelay) }
+    }
   })
 
-  const finalCampaign = await prisma.campaign.findUnique({
-    where: { id: campaignId },
-  })
-
-  securityLog.campaignCompleted(
-    campaignId,
-    finalCampaign?.sentCount ?? 0,
-    finalCampaign?.failedCount ?? 0
-  )
-
-  activeJobs.delete(campaignId)
+  // Inserisci in BullMQ (li schedula tutti nel futuro in base al delay!)
+  await campaignQueue.addBulk(jobs)
 }
 
-/**
- * Pause a running campaign
- */
-export function pauseCampaign(campaignId: string): boolean {
-  const job = activeJobs.get(campaignId)
-  if (!job) return false
-  job.running = false
+export async function pauseCampaign(campaignId: string, teamId: string) {
+  await prisma.campaign.update({
+    where: { id: campaignId, teamId },
+    data: { status: 'PAUSED' }
+  })
+  // I job pendenti in BullMQ per questa campagna torneranno skipped (Campaign not running).
+  // Quando verrà richiamato startCampaign(), ricalcoleremo quelli mancanti e li rimetteremo in coda.
   return true
 }
 
-/**
- * Get current progress for a campaign
- */
-export async function getCampaignProgress(campaignId: string) {
+export async function getCampaignProgress(campaignId: string, teamId: string) {
   const campaign = await prisma.campaign.findUnique({
-    where: { id: campaignId },
-    select: {
-      id: true,
-      status: true,
-      totalCount: true,
-      sentCount: true,
-      failedCount: true,
-      startedAt: true,
-      completedAt: true,
-    },
+    where: { id: campaignId, teamId }
   })
   if (!campaign) return null
 
@@ -186,9 +171,5 @@ export async function getCampaignProgress(campaignId: string) {
     ? Math.round(((campaign.sentCount + campaign.failedCount) / campaign.totalCount) * 100)
     : 0
 
-  return {
-    ...campaign,
-    progress,
-    isActive: activeJobs.has(campaignId),
-  }
+  return { ...campaign, progress, isActive: campaign.status === 'RUNNING' }
 }
