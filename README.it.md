@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="WA Sender Pro Dashboard" width="800" />
+  <img src="docs/screenshots/dashboard.png" alt="WaForge Dashboard" width="800" />
 </p>
 
-<h1 align="center">WA Sender Pro</h1>
+<h1 align="center">WaForge</h1>
 
 <p align="center">
   <strong>Dashboard premium per l'invio massivo e personalizzato di messaggi WhatsApp.</strong>
@@ -130,7 +130,7 @@ Il progetto implementa rigorosamente le linee guida **OWASP Top 10** e **NIST CS
 ## 📁 Struttura del Progetto
 
 ```
-wa-sender-pro/
+waforge/
 ├── pages/               # Pagine Vue (file-based routing)
 ├── components/          # Componenti Vue riutilizzabili
 ├── layouts/             # Layout Sidebar + Theme/i18n
@@ -166,8 +166,8 @@ wa-sender-pro/
 
 ```bash
 # 1. Clona il repository
-git clone https://github.com/darkrei08/wa-sender-pro.git
-cd wa-sender-pro
+git clone https://github.com/darkrei08/waforge.git
+cd waforge
 
 # 2. Installa le dipendenze
 bun install
@@ -198,18 +198,18 @@ L'immagine è disponibile su `ghcr.io` e viene aggiornata automaticamente ad ogn
 
 ```bash
 # Pull dell'immagine
-docker pull ghcr.io/darkrei08/wa-sender-pro:latest
+docker pull ghcr.io/darkrei08/waforge:latest
 
 # Avvio diretto (app sola, WuzAPI separato)
 docker run -d \
-  --name wa-sender-pro \
+  --name waforge \
   -p 3000:3000 \
   -e WUZAPI_URL=http://host.docker.internal:3100 \
   -e WUZAPI_TOKEN=your-token \
   -e APP_SECRET=your-secret \
-  -e DATABASE_URL=file:/app/data/wa-sender-pro.db \
+  -e DATABASE_URL=file:/app/data/waforge.db \
   -v wa-sender-data:/app/data \
-  ghcr.io/darkrei08/wa-sender-pro:latest
+  ghcr.io/darkrei08/waforge:latest
 ```
 
 #### Opzione 2 — Docker Compose con immagine dal registry (consigliato)
@@ -236,9 +236,9 @@ services:
     volumes:
       - gowa_data:/app/storages
 
-  # ─── WA Sender Pro ────────────────────────────────────────
-  wa-sender-pro:
-    image: ghcr.io/darkrei08/wa-sender-pro:latest
+  # ─── WaForge ────────────────────────────────────────
+  waforge:
+    image: ghcr.io/darkrei08/waforge:latest
     ports: ["3000:3000"]
     environment:
       # Scegli quale engine usare: "wuzapi" o "gowa"
@@ -248,7 +248,7 @@ services:
       GOWA_URL: http://gowa:3000
       GOWA_TOKEN: your-token
       APP_SECRET: change-me-to-random-string
-      DATABASE_URL: file:/app/data/wa-sender-pro.db
+      DATABASE_URL: file:/app/data/waforge.db
     volumes:
       - app_data:/app/data
     depends_on: [wuzapi, gowa]
@@ -266,8 +266,8 @@ docker-compose up -d
 #### Opzione 3 — Build locale
 
 ```bash
-git clone https://github.com/darkrei08/wa-sender-pro.git
-cd wa-sender-pro
+git clone https://github.com/darkrei08/waforge.git
+cd waforge
 docker-compose up -d --build
 ```
 
