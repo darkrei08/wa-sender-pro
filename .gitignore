@@ -44,3 +44,6 @@ logs/
 # Coverage
 coverage/
 .nyc_output/
+
+# Graphify
+graphify-out/
