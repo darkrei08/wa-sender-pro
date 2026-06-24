@@ -1,6 +1,6 @@
 <template>
   <div class="p-8 h-full flex flex-col items-center justify-center relative">
-    <div class="max-w-4xl w-full bg-surface-container-low/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+    <div class="max-w-4xl w-full bg-surface-container-low/40 backdrop-blur-xl border border-black/5 dark:border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
       <!-- Glow effect -->
       <div class="absolute -top-32 -right-32 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
 

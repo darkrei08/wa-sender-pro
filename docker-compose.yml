@@ -6,9 +6,7 @@ services:
     restart: unless-stopped
     ports:
       - "3100:8080"
-    environment:
-      - WUZAPI_USERS=${WUZAPI_TOKEN:-secret-token}
-      - WUZAPI_LOGTYPE=console
+    command: ["-admintoken", "${WUZAPI_TOKEN:-secret-token}", "-logtype", "console"]
     volumes:
       - wuzapi_data:/app/dbdata
     networks:
@@ -17,23 +15,25 @@ services:
   # ─── go-whatsapp-web-multidevice (fallback engine) ───────────────────────
   # Uncomment this service to use gowa instead of/alongside WuzAPI.
   # Set WHATSAPP_ENGINE=gowa in the app environment below.
-  # gowa:
-  #   image: aldinokemal/go-whatsapp-web-multidevice:latest
-  #   container_name: waforge-gowa
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - GOWA_AUTH_TOKEN=${GOWA_TOKEN:-secret-token}
-  #   volumes:
-  #     - gowa_data:/app/storages
-  #   networks:
-  #     - wa-net
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/app/login"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
+  gowa:
+    image: ghcr.io/aldinokemal/go-whatsapp-web-multidevice:latest
+    container_name: waforge-gowa
+    restart: unless-stopped
+    ports:
+      - "3200:3000"
+    command:
+      - rest
+      - --basic-auth=admin:${GOWA_TOKEN:-secret-token}
+      - --port=3000
+    volumes:
+      - gowa_data:/app/storages
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/app/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wa-net
 
   # ─── WA Forge  — Nuxt 3 Dashboard (Nitro Engine) ─────────────────────
   # To use the pre-built image from GitHub Container Registry instead of
@@ -68,8 +68,16 @@ services:
         condition: service_healthy
       wuzapi:
         condition: service_started
+      gowa:
+        condition: service_started
     networks:
       - wa-net
+    labels:
+      - "traefik.enable=${TRAEFIK_ENABLE:-false}"
+      - "traefik.http.routers.waforge.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.waforge.entrypoints=${WEBSECURE_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.waforge.tls.certresolver=${CERT_RESOLVER:-myresolver}"
+      - "traefik.http.services.waforge.loadbalancer.server.port=3000"
 
   # ─── PostgreSQL ─────────────────────────────────────────────────────────────
   db:
@@ -111,6 +119,8 @@ services:
 
 volumes:
   wuzapi_data:
+    driver: local
+  gowa_data:
     driver: local
   pg_data:
     driver: local

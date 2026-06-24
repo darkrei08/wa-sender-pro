@@ -1,17 +1,17 @@
 <template>
   <div class="min-h-screen bg-surface dark:bg-[#12161f] text-on-surface transition-colors duration-300 flex">
     <!-- Sidebar -->
-    <aside class="w-[280px] bg-surface-container/50 backdrop-blur-xl border-r border-white/5 flex flex-col justify-between">
+    <aside class="w-[280px] bg-surface-container/50 backdrop-blur-xl border-r border-black/5 dark:border-white/5 flex flex-col justify-between">
       <div class="p-6">
         <h1 class="text-xl font-bold text-primary mb-6 tracking-tighter">WaForge</h1>
 
         <!-- Team/User Info -->
-        <div v-if="authStore.user" class="mb-8 p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between">
+        <div v-if="authStore.user" class="mb-8 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between">
           <div class="overflow-hidden">
-            <p class="text-sm font-medium text-white truncate">{{ authStore.currentTeam?.name || 'Workspace' }}</p>
-            <p class="text-xs text-gray-400 truncate">{{ authStore.user?.email }}</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ authStore.currentTeam?.name || 'Workspace' }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ authStore.user?.email }}</p>
           </div>
-          <button @click="authStore.logout" class="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-400 rounded-lg transition-colors" title="Logout">
+          <button @click="authStore.logout" class="p-2 hover:bg-red-500/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-colors" title="Logout">
             <LogOut class="w-4 h-4" />
           </button>
         </div>
@@ -44,7 +44,7 @@
         </nav>
       </div>
 
-      <div class="p-6 border-t border-white/5 space-y-4">
+      <div class="p-6 border-t border-black/5 dark:border-white/5 space-y-4">
         <!-- Theme & Lang Switcher -->
         <div class="flex items-center justify-between">
           <button @click="toggleColorMode" class="p-2 rounded-full hover:bg-white/5 transition-colors">

@@ -11,10 +11,10 @@
     --surface-variant: 230 230 230;
 
     --surface-container-lowest: 255 255 255;
-    --surface-container-low: 248 248 248;
-    --surface-container: 240 240 240;
-    --surface-container-high: 232 232 232;
-    --surface-container-highest: 224 224 224;
+    --surface-container-low: 243 244 246; /* gray-100 */
+    --surface-container: 229 231 235; /* gray-200 */
+    --surface-container-high: 209 213 219; /* gray-300 */
+    --surface-container-highest: 156 163 175; /* gray-400 */
 
     --on-surface: 5 20 36;
     --on-surface-variant: 60 70 61;

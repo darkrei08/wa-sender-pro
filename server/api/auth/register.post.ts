@@ -54,10 +54,12 @@ export default defineEventHandler(async (event) => {
   })
 
   // Setta il cookie HttpOnly
+  const isSecure = process.env.NUXT_PUBLIC_APP_URL?.startsWith('https') || false
   setCookie(event, 'auth_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 60 * 60 * 24 * 7 // 7 days
+    secure: isSecure,
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/'
   })
 
   return { 

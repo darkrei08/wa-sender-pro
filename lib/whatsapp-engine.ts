@@ -43,15 +43,15 @@ interface EngineStatus {
   engine: string
 }
 
-async function apiCall(path: string, token: string, method = 'GET', body?: unknown) {
+async function apiCall(path: string, token: string, method = 'GET', body?: unknown, retry = true): Promise<any> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     token,
   }
 
-  // gowa uses Authorization header
+  // gowa uses Basic Auth (admin:token)
   if (ENGINE === 'gowa') {
-    headers['Authorization'] = `Bearer ${token}`
+    headers['Authorization'] = `Basic ${Buffer.from(`admin:${token}`).toString('base64')}`
   }
 
   const res = await fetch(`${cfg.base}${path}`, {
@@ -62,6 +62,23 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
   })
 
   if (!res.ok) {
+    if (res.status === 401 && ENGINE === 'wuzapi' && retry) {
+      // Auto-provision user for fresh Docker setups
+      try {
+        await fetch(`${cfg.base}/admin/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token,
+          },
+          body: JSON.stringify({ name: 'WaForge AutoUser', token })
+        })
+        return apiCall(path, token, method, body, false)
+      } catch (e) {
+        // Ignore and fall through to throw original error
+      }
+    }
+
     const txt = await res.text()
     throw new Error(`[${ENGINE}] ${res.status}: ${txt}`)
   }
