@@ -54,7 +54,7 @@ model Template {
 model Campaign {
   id          String         @id @default(cuid())
   name        String
-  status      CampaignStatus @default(DRAFT)
+  status      String         @default("DRAFT")
   
   templateId  String
   template    Template       @relation(fields: [templateId], references: [id])
@@ -80,13 +80,6 @@ model Campaign {
   messages    Message[]
 }
 
-enum CampaignStatus {
-  DRAFT
-  RUNNING
-  PAUSED
-  COMPLETED
-  FAILED
-}
 
 // ── Messages (individual send log) ───────────────────────────────────────────
 
@@ -100,7 +93,7 @@ model Message {
   campaign    Campaign?     @relation(fields: [campaignId], references: [id])
   
   body        String        // final rendered message
-  status      MessageStatus @default(PENDING)
+  status      String        @default("PENDING")
   errorReason String?
   
   wuzapiMsgId String?       // WuzAPI message ID for tracking
@@ -109,11 +102,6 @@ model Message {
   createdAt   DateTime      @default(now())
 }
 
-enum MessageStatus {
-  PENDING
-  SENT
-  FAILED
-}
 
 // ── WhatsApp Session ─────────────────────────────────────────────────────────
 
