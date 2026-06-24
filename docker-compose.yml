@@ -60,11 +60,8 @@ services:
       - WHATSAPP_ENGINE=${WHATSAPP_ENGINE:-wuzapi}
       - WUZAPI_URL=http://wuzapi:3100
       - WUZAPI_TOKEN=${WUZAPI_TOKEN:-secret-token}
-      - GOWA_URL=http://gowa:3000
-      - GOWA_TOKEN=${GOWA_TOKEN:-secret-token}
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/wasender?schema=public
-      - REDIS_URL=redis://redis:6379
-      - CAMPAIGN_DELAY_MIN=${CAMPAIGN_DELAY_MIN:-15}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-wasender}?schema=public
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - CAMPAIGN_DELAY_MAX=${CAMPAIGN_DELAY_MAX:-45}
       - MAX_MESSAGES_PER_HOUR=${MAX_MESSAGES_PER_HOUR:-100}
       - SPINTAX_ENABLED=${SPINTAX_ENABLED:-true}
@@ -84,9 +81,11 @@ services:
     container_name: wa-sender-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: wasender
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-wasender}
+    ports:
+      - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     networks:
@@ -102,6 +101,8 @@ services:
     image: redis:7-alpine
     container_name: wa-sender-redis
     restart: unless-stopped
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
