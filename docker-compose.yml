@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  # ─── WuzAPI — WhatsApp Engine (Go + whatsmeow) ───────────────────────────
+  wuzapi:
+    image: asternic/wuzapi:latest
+    container_name: wa-sender-wuzapi
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      - WUZAPI_USERS=${WUZAPI_TOKEN:-secret-token}
+      - WUZAPI_LOGTYPE=console
+    volumes:
+      - wuzapi_data:/app/dbdata
+    networks:
+      - wa-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/app/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─── Next.js 14 — Dashboard & BFF ────────────────────────────────────────
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wa-sender-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - APP_SECRET=${APP_SECRET:-change-me}
+      - WUZAPI_URL=http://wuzapi:3100
+      - WUZAPI_TOKEN=${WUZAPI_TOKEN:-secret-token}
+      - DATABASE_URL=file:/app/data/wa-sender-pro.db
+      - CAMPAIGN_DELAY_MIN=${CAMPAIGN_DELAY_MIN:-15}
+      - CAMPAIGN_DELAY_MAX=${CAMPAIGN_DELAY_MAX:-45}
+      - MAX_MESSAGES_PER_HOUR=${MAX_MESSAGES_PER_HOUR:-100}
+    volumes:
+      - app_data:/app/data
+    depends_on:
+      wuzapi:
+        condition: service_healthy
+    networks:
+      - wa-net
+
+volumes:
+  wuzapi_data:
+    driver: local
+  app_data:
+    driver: local
+
+networks:
+  wa-net:
+    driver: bridge

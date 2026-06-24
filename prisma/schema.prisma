@@ -1,0 +1,126 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Contacts ─────────────────────────────────────────────────────────────────
+
+model Contact {
+  id          String   @id @default(cuid())
+  name        String
+  prefix      String   @default("+39")
+  phone       String
+  fullPhone   String   // computed: prefix+phone (digits only)
+  email       String?
+  company     String?
+  notes       String?
+  customFields String? // JSON blob for extra CSV columns
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  messages    Message[]
+  
+  @@unique([fullPhone])
+  @@index([fullPhone])
+}
+
+// ── Templates ────────────────────────────────────────────────────────────────
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  body        String   // supports {{Name}}, {{email}}, etc.
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  campaigns   Campaign[]
+}
+
+// ── Campaigns ────────────────────────────────────────────────────────────────
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  status      CampaignStatus @default(DRAFT)
+  
+  templateId  String
+  template    Template       @relation(fields: [templateId], references: [id])
+  
+  // Contact filter (JSON array of contact IDs, or "ALL")
+  contactIds  String         @default("ALL")
+  
+  // Rate limiting
+  delayMin    Int            @default(15) // seconds
+  delayMax    Int            @default(45) // seconds
+  
+  // Stats
+  totalCount  Int            @default(0)
+  sentCount   Int            @default(0)
+  failedCount Int            @default(0)
+  
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  messages    Message[]
+}
+
+enum CampaignStatus {
+  DRAFT
+  RUNNING
+  PAUSED
+  COMPLETED
+  FAILED
+}
+
+// ── Messages (individual send log) ───────────────────────────────────────────
+
+model Message {
+  id          String        @id @default(cuid())
+  
+  contactId   String
+  contact     Contact       @relation(fields: [contactId], references: [id])
+  
+  campaignId  String?
+  campaign    Campaign?     @relation(fields: [campaignId], references: [id])
+  
+  body        String        // final rendered message
+  status      MessageStatus @default(PENDING)
+  errorReason String?
+  
+  wuzapiMsgId String?       // WuzAPI message ID for tracking
+  
+  sentAt      DateTime?
+  createdAt   DateTime      @default(now())
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ── WhatsApp Session ─────────────────────────────────────────────────────────
+
+model WhatsAppSession {
+  id        String   @id @default("default")
+  token     String   // WuzAPI user token
+  status    String   @default("disconnected") // connected|disconnected|connecting
+  phone     String?  // connected phone number
+  updatedAt DateTime @updatedAt
+}

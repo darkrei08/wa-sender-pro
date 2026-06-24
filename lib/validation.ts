@@ -1,0 +1,127 @@
+/**
+ * Secure Input Validation Library — OWASP A03
+ * Uses Zod for schema-first validation on ALL incoming data.
+ * Never trust user input — validate server-side always.
+ */
+
+import { z } from 'zod'
+import { NextResponse } from 'next/server'
+
+// ── Common validators ─────────────────────────────────────────────────────────
+
+/** Sanitize string: trim, strip HTML tags (anti-XSS) */
+const safeString = (maxLen = 255) =>
+  z
+    .string()
+    .trim()
+    .max(maxLen, `Max ${maxLen} characters`)
+    .transform(s => s.replace(/<[^>]*>/g, ''))  // strip HTML tags (OWASP A03)
+
+/** Phone: only digits, 5–15 chars (E.164 compliant) */
+const phoneNumber = z
+  .string()
+  .trim()
+  .transform(s => s.replace(/\D/g, ''))          // digits only
+  .refine(s => s.length >= 5 && s.length <= 15, 'Invalid phone number')
+
+/** Phone prefix: +NN format */
+const phonePrefix = z
+  .string()
+  .trim()
+  .regex(/^\+\d{1,4}$/, 'Prefix must be +1 to +9999')
+  .default('+39')
+
+/** Safe email */
+const safeEmail = z.string().trim().email().max(320).toLowerCase().optional()
+
+// ── Contact schemas (OWASP A03 — Input Validation) ───────────────────────────
+
+export const CreateContactSchema = z.object({
+  name:    safeString(100),
+  prefix:  phonePrefix,
+  phone:   phoneNumber,
+  email:   safeEmail,
+  company: safeString(100).optional(),
+  notes:   safeString(500).optional(),
+  customFields: z.record(safeString(200)).optional(),
+})
+
+export const UpdateContactSchema = CreateContactSchema.partial()
+
+export const BulkImportSchema = z.object({
+  csv: z
+    .string()
+    .max(5_000_000, 'CSV file too large (max 5MB)')  // prevent DoS
+    .min(1, 'Empty CSV'),
+})
+
+// ── Template schemas ──────────────────────────────────────────────────────────
+
+export const CreateTemplateSchema = z.object({
+  name:        safeString(100),
+  body:        z
+    .string()
+    .trim()
+    .min(1, 'Template body required')
+    .max(4096, 'Max 4096 characters')
+    // Prevent SSTI (Server-Side Template Injection): only allow {{word}} placeholders
+    .refine(
+      s => !/\{%|<%|#{|@{/.test(s),
+      'Invalid template syntax — use {{variable}} format only'
+    ),
+  description: safeString(255).optional(),
+})
+
+export const UpdateTemplateSchema = CreateTemplateSchema.partial()
+
+// ── Campaign schemas ──────────────────────────────────────────────────────────
+
+export const CreateCampaignSchema = z.object({
+  name:       safeString(100),
+  templateId: z.string().cuid('Invalid template ID'),
+  contactIds: z.union([
+    z.literal('ALL'),
+    z.array(z.string().cuid()).min(1, 'Select at least 1 contact').max(10000),
+  ]).default('ALL'),
+  delayMin: z.number().int().min(5).max(300).default(15),   // min 5s anti-ban
+  delayMax: z.number().int().min(10).max(600).default(45),
+}).refine(d => d.delayMin < d.delayMax, 'delayMin must be less than delayMax')
+
+// ── Pagination schema ─────────────────────────────────────────────────────────
+
+export const PaginationSchema = z.object({
+  page:   z.coerce.number().int().min(1).default(1),
+  limit:  z.coerce.number().int().min(1).max(200).default(50),
+  search: z.string().trim().max(100).optional(),
+})
+
+// ── Bulk delete schema ────────────────────────────────────────────────────────
+
+export const BulkDeleteSchema = z.object({
+  ids: z.array(z.string().cuid()).min(1).max(1000, 'Max 1000 IDs per request'),
+})
+
+// ── Response helpers (standardize error format) ───────────────────────────────
+
+export type ApiError = { error: string; details?: unknown; requestId?: string }
+
+export function validationError(issues: z.ZodIssue[], status = 422): NextResponse<ApiError> {
+  return NextResponse.json(
+    {
+      error: 'Validation Error',
+      details: issues.map(i => ({ path: i.path.join('.'), message: i.message })),
+    },
+    { status }
+  )
+}
+
+export function parseBody<T extends z.ZodType>(
+  schema: T,
+  data: unknown
+): { success: true; data: z.infer<T> } | { success: false; response: NextResponse<ApiError> } {
+  const result = schema.safeParse(data)
+  if (!result.success) {
+    return { success: false, response: validationError(result.error.issues) }
+  }
+  return { success: true, data: result.data }
+}
