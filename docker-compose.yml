@@ -28,7 +28,7 @@ services:
     volumes:
       - gowa_data:/app/storages
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/app/login"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://admin:${GOWA_TOKEN:-secret-token}@localhost:3000/app/status"]
       interval: 10s
       timeout: 5s
       retries: 5
