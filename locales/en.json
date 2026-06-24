@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "home": "Home",
+    "contacts": "Contacts",
+    "campaigns": "Campaigns",
+    "settings": "Settings",
+    "api_status": "API Status"
+  },
+  "connect": {
+    "title": "Connect WhatsApp",
+    "instructions": {
+      "step_1": "1. Open WhatsApp on your phone",
+      "step_2": "2. Tap Menu or Settings and select Linked Devices",
+      "step_3": "3. Tap on Link a Device",
+      "step_4": "4. Point your phone to this screen to capture the code"
+    },
+    "waiting": "Waiting for scan...",
+    "refresh": "Refresh QR Code",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    }
+  },
+  "dashboard": {
+    "total_contacts": "Total Contacts",
+    "active_campaigns": "Active Campaigns",
+    "messages_sent": "Messages Sent",
+    "recent_campaigns": "Recent Campaigns",
+    "status": "Status"
+  },
+  "debug": {
+    "title": "Debug Mode",
+    "clear_logs": "Clear Logs",
+    "mock_connect": "Mock Connection",
+    "disconnect": "Disconnect"
+  }
+}

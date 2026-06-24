@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "home": "Dashboard",
+    "contacts": "Contatti",
+    "campaigns": "Campagne",
+    "settings": "Impostazioni",
+    "api_status": "Stato API"
+  },
+  "connect": {
+    "title": "Collega WhatsApp",
+    "instructions": {
+      "step_1": "1. Apri WhatsApp sul tuo telefono",
+      "step_2": "2. Tocca Menu o Impostazioni e seleziona Dispositivi Collegati",
+      "step_3": "3. Tocca Collega un dispositivo",
+      "step_4": "4. Inquadra questo schermo con il telefono per scansionare il codice"
+    },
+    "waiting": "In attesa di scansione...",
+    "refresh": "Ricarica QR Code",
+    "status": {
+      "connected": "Connesso",
+      "disconnected": "Disconnesso"
+    }
+  },
+  "dashboard": {
+    "total_contacts": "Totale Contatti",
+    "active_campaigns": "Campagne Attive",
+    "messages_sent": "Messaggi Inviati",
+    "recent_campaigns": "Campagne Recenti",
+    "status": "Stato"
+  },
+  "debug": {
+    "title": "Modalità Debug",
+    "clear_logs": "Pulisci Log",
+    "mock_connect": "Simula Connessione",
+    "disconnect": "Forza Disconnessione"
+  }
+}
