@@ -4,9 +4,10 @@ FROM oven/bun:1 AS builder
 WORKDIR /app
 
 COPY package.json bun.lock ./
-RUN bun install
+RUN bun install --ignore-scripts
 
 COPY . .
+RUN bun run postinstall
 RUN bunx prisma generate
 RUN bun run build
 
