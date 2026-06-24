@@ -15,7 +15,7 @@
 
 1. **Framework (Vue/Nuxt):** Scelto per reattività migliore e preferenza utente, mantenendo l'engine backend intatto.
 2. **i18n & Theme:** Configurato a livello di root tramite moduli Nuxt per evitare re-render lenti.
-3. **Database:** SQLite con Prisma, logica migrata verso le API routes di Nitro (`server/api`).
+3. **Database:** PostgreSQL con Prisma, logica migrata verso le API routes di Nitro (`server/api`). Include supporto Multi-Tenancy (Team).
 4. **Validazione:** Zod per la sanificazione degli input (OWASP-compliant).
 
 ## 🚀 Prossimi Passi (Next Actions)
