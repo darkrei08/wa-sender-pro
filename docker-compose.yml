@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ─── WuzAPI — WhatsApp Engine (Go + whatsmeow) ───────────────────────────
   wuzapi:
@@ -21,25 +19,54 @@ services:
       timeout: 10s
       retries: 3
 
-  # ─── Next.js 14 — Dashboard & BFF ────────────────────────────────────────
-  nextjs:
+  # ─── go-whatsapp-web-multidevice (fallback engine) ───────────────────────
+  # Uncomment this service to use gowa instead of/alongside WuzAPI.
+  # Set WHATSAPP_ENGINE=gowa in the app environment below.
+  # gowa:
+  #   image: aldinokemal/go-whatsapp-web-multidevice:latest
+  #   container_name: wa-sender-gowa
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GOWA_AUTH_TOKEN=${GOWA_TOKEN:-secret-token}
+  #   volumes:
+  #     - gowa_data:/app/storages
+  #   networks:
+  #     - wa-net
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/app/login"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # ─── WA Sender Pro — Nuxt 3 Dashboard (Nitro Engine) ─────────────────────
+  # To use the pre-built image from GitHub Container Registry instead of
+  # building locally, replace the `build` block with:
+  #   image: ghcr.io/darkrei08/wa-sender-pro:latest
+  wa-sender-pro:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ghcr.io/darkrei08/wa-sender-pro:latest
     container_name: wa-sender-app
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - NUXT_PUBLIC_APP_URL=${NUXT_PUBLIC_APP_URL:-http://localhost:3000}
       - APP_SECRET=${APP_SECRET:-change-me}
+      - WHATSAPP_ENGINE=${WHATSAPP_ENGINE:-wuzapi}
       - WUZAPI_URL=http://wuzapi:3100
       - WUZAPI_TOKEN=${WUZAPI_TOKEN:-secret-token}
+      - GOWA_URL=http://gowa:3000
+      - GOWA_TOKEN=${GOWA_TOKEN:-secret-token}
       - DATABASE_URL=file:/app/data/wa-sender-pro.db
       - CAMPAIGN_DELAY_MIN=${CAMPAIGN_DELAY_MIN:-15}
       - CAMPAIGN_DELAY_MAX=${CAMPAIGN_DELAY_MAX:-45}
       - MAX_MESSAGES_PER_HOUR=${MAX_MESSAGES_PER_HOUR:-100}
+      - SPINTAX_ENABLED=${SPINTAX_ENABLED:-true}
     volumes:
       - app_data:/app/data
     depends_on:
@@ -51,6 +78,8 @@ services:
 volumes:
   wuzapi_data:
     driver: local
+  # gowa_data:
+  #   driver: local
   app_data:
     driver: local
 

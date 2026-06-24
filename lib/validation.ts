@@ -2,10 +2,12 @@
  * Secure Input Validation Library — OWASP A03
  * Uses Zod for schema-first validation on ALL incoming data.
  * Never trust user input — validate server-side always.
+ *
+ * Adapted for Nuxt 3 / Nitro (H3) — no Next.js dependencies.
  */
 
 import { z } from 'zod'
-import { NextResponse } from 'next/server'
+import { createError, type H3Event, setResponseStatus } from 'h3'
 
 // ── Common validators ─────────────────────────────────────────────────────────
 
@@ -101,27 +103,46 @@ export const BulkDeleteSchema = z.object({
   ids: z.array(z.string().cuid()).min(1).max(1000, 'Max 1000 IDs per request'),
 })
 
-// ── Response helpers (standardize error format) ───────────────────────────────
+// ── Settings schema ───────────────────────────────────────────────────────────
+
+export const UpdateSettingsSchema = z.object({
+  delayMin:           z.number().int().min(5).max(300).optional(),
+  delayMax:           z.number().int().min(10).max(600).optional(),
+  maxMessagesPerHour: z.number().int().min(1).max(1000).optional(),
+  spintaxEnabled:     z.boolean().optional(),
+  whatsappEngine:     z.enum(['wuzapi', 'gowa']).optional(),
+})
+
+// ── Response helpers (H3/Nitro native) ────────────────────────────────────────
 
 export type ApiError = { error: string; details?: unknown; requestId?: string }
 
-export function validationError(issues: z.ZodIssue[], status = 422): NextResponse<ApiError> {
-  return NextResponse.json(
-    {
+/**
+ * Throw a validation error as an H3 createError (Nitro-compatible).
+ * Use in event handlers: `throw validationError(result.error.issues)`
+ */
+export function validationError(issues: z.ZodIssue[], statusCode = 422) {
+  return createError({
+    statusCode,
+    statusMessage: 'Validation Error',
+    data: {
       error: 'Validation Error',
       details: issues.map(i => ({ path: i.path.join('.'), message: i.message })),
     },
-    { status }
-  )
+  })
 }
 
+/**
+ * Parse and validate request body against a Zod schema.
+ * Returns typed data or throws H3 error.
+ */
 export function parseBody<T extends z.ZodType>(
   schema: T,
   data: unknown
-): { success: true; data: z.infer<T> } | { success: false; response: NextResponse<ApiError> } {
+): z.infer<T> {
   const result = schema.safeParse(data)
   if (!result.success) {
-    return { success: false, response: validationError(result.error.issues) }
+    throw validationError(result.error.issues)
   }
-  return { success: true, data: result.data }
+  return result.data
 }

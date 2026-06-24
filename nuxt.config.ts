@@ -1,35 +1,31 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
 
   modules: [
+    '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
-    '@nuxtjs/color-mode',
     '@nuxtjs/i18n',
-    '@pinia/nuxt'
+    '@nuxtjs/color-mode'
   ],
-
-  colorMode: {
-    classSuffix: '',
-    preference: 'system',
-    fallback: 'dark'
-  },
 
   i18n: {
     locales: [
-      { code: 'en', iso: 'en-US', name: 'English', file: 'en.json' },
-      { code: 'it', iso: 'it-IT', name: 'Italiano', file: 'it.json' }
+      { code: 'it', file: 'it.json', name: 'Italiano' },
+      { code: 'en', file: 'en.json', name: 'English' }
     ],
-    defaultLocale: 'en',
-    strategy: 'prefix_except_default',
+    defaultLocale: 'it',
     lazy: true,
     langDir: 'locales/'
   },
 
-  runtimeConfig: {
-    public: {
-      enableDebugWidget: process.env.ENABLE_DEBUG_WIDGET || 'false'
+  colorMode: {
+    classSuffix: ''
+  },
+
+  nitro: {
+    experimental: {
+      database: true
     }
   }
 })
