@@ -13,10 +13,14 @@ declare global {
 }
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({ log: ['error'] })
+  prisma = new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL || 'file:./data/wa-sender-pro.db',
+    log: ['error']
+  })
 } else {
   if (!globalThis.__prisma) {
     globalThis.__prisma = new PrismaClient({
+      datasourceUrl: process.env.DATABASE_URL || 'file:./data/wa-sender-pro.db',
       log: ['query', 'error', 'warn'],
     })
   }
