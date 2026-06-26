@@ -4,7 +4,7 @@
       <h1 class="text-3xl font-bold text-on-surface tracking-tight">{{ t('nav.templates') }}</h1>
       <button @click="openWizard()"
               class="px-5 py-2.5 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] transition-all flex items-center gap-2">
-        <Plus class="w-5 h-5" /> Nuovo Template
+        <Plus class="w-5 h-5" /> {{ t('templates.new') }}
       </button>
     </div>
 
@@ -29,7 +29,7 @@
               </button>
             </div>
           </div>
-          <p class="text-xs text-on-surface-variant mb-4">{{ tmpl.description || 'Nessuna descrizione' }}</p>
+          <p class="text-xs text-on-surface-variant mb-4">{{ tmpl.description || t('templates.no_description') }}</p>
           <div class="bg-black/20 p-3 rounded-lg border border-white/5 max-h-32 overflow-y-auto">
             <div class="text-sm text-on-surface whitespace-pre-wrap leading-relaxed" v-html="formatWhatsAppText(tmpl.body)"></div>
           </div>
@@ -41,30 +41,30 @@
     <Teleport to="body">
       <div v-if="showWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showWizard = false">
         <div class="w-full max-w-2xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
-          <h3 class="text-lg font-bold text-on-surface mb-6">{{ isEditing ? 'Modifica Template' : 'Crea Nuovo Template' }}</h3>
+          <h3 class="text-lg font-bold text-on-surface mb-6">{{ isEditing ? t('templates.edit_title') : t('templates.create_title') }}</h3>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-on-surface-variant mb-1">Nome</label>
-              <input v-model="formData.name" type="text" placeholder="Es: Messaggio Benvenuto"
+              <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.name_label') }}</label>
+              <input v-model="formData.name" type="text" :placeholder="t('templates.name_placeholder')"
                      class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-on-surface-variant mb-1">Descrizione (opzionale)</label>
-              <input v-model="formData.description" type="text" placeholder="Note interne..."
+              <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.description_label') }}</label>
+              <input v-model="formData.description" type="text" :placeholder="t('templates.description_placeholder')"
                      class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-1">Testo Messaggio</label>
-                <textarea v-model="formData.body" rows="6" placeholder="Usa {{Name}} per il nome del contatto. *grassetto*, _corsivo_, ~barrato~"
+                <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.body_label') }}</label>
+                <textarea v-model="formData.body" rows="6" :placeholder="t('templates.body_placeholder')"
                           class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none whitespace-pre-wrap"></textarea>
-                <p class="text-xs text-on-surface-variant mt-1">Variabili supportate: {{Name}}, {{Phone}}, {{Email}}, {{Company}}</p>
+                <p class="text-xs text-on-surface-variant mt-1">{{ t('templates.body_variables') }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-1">Anteprima</label>
+                <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.preview_label') }}</label>
                 <div class="w-full p-3 bg-black/20 border border-white/5 rounded-lg h-[156px] overflow-y-auto">
                   <div class="text-sm text-on-surface whitespace-pre-wrap leading-relaxed" v-html="formatWhatsAppText(formData.body)"></div>
                 </div>
@@ -73,10 +73,10 @@
           </div>
 
           <div class="flex justify-end gap-3 mt-6">
-            <button @click="showWizard = false" class="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">Annulla</button>
+            <button @click="showWizard = false" class="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">{{ t('templates.btn_cancel') }}</button>
             <button @click="handleSave" :disabled="!formData.name || !formData.body"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg hover:bg-primary-fixed-dim transition-all disabled:opacity-30">
-              Salva Template
+              {{ t('templates.btn_save') }}
             </button>
           </div>
         </div>
@@ -100,7 +100,15 @@ const formData = ref({ id: '', name: '', description: '', body: '' })
 
 function formatWhatsAppText(text: string) {
   if (!text) return ''
-  return text
+  
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
+  return escaped
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/~(.*?)~/g, '<del>$1</del>')
@@ -127,7 +135,7 @@ async function handleSave() {
 }
 
 async function handleDelete(id: string) {
-  if (confirm('Sei sicuro di voler eliminare questo template?')) {
+  if (confirm(t('templates.confirm_delete'))) {
     await store.deleteTemplate(id)
   }
 }

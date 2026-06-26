@@ -1,10 +1,10 @@
 <template>
   <div class="p-8 space-y-6 animate-fade-in">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-on-surface tracking-tight">{{ t('nav.campaigns') }}</h1>
+      <h1 class="text-3xl font-bold text-on-surface tracking-tight">{{ t('campaigns.title') }}</h1>
       <button @click="showWizard = true"
               class="px-5 py-2.5 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] transition-all flex items-center gap-2">
-        <Plus class="w-5 h-5" /> Nuova Campagna
+        <Plus class="w-5 h-5" /> {{ t('campaigns.new') }}
       </button>
     </div>
 
@@ -13,7 +13,7 @@
       <div class="absolute -top-16 -right-16 w-48 h-48 bg-primary/15 rounded-full blur-[80px] pointer-events-none"></div>
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h3 class="font-semibold text-on-surface">Campagna in corso</h3>
+          <h3 class="font-semibold text-on-surface">{{ t('campaigns.active_progress') }}</h3>
           <p class="text-sm text-on-surface-variant">{{ store.activeProgress.sentCount + store.activeProgress.failedCount }} / {{ store.activeProgress.totalCount }}</p>
         </div>
         <span class="text-2xl font-bold text-primary">{{ store.activeProgress.progress }}%</span>
@@ -42,6 +42,10 @@
             <span class="px-3 py-1 text-xs font-bold rounded-full" :class="statusClass(campaign.status)">
               {{ campaign.status }}
             </span>
+            <button @click="openLogs(campaign.id)"
+                    class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="View Logs">
+              <Eye class="w-4 h-4" />
+            </button>
             <button v-if="campaign.status === 'DRAFT'" @click="store.startCampaign(campaign.id)"
                     class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
               <Play class="w-4 h-4" />
@@ -53,9 +57,9 @@
           </div>
         </div>
         <div class="flex gap-6 mt-4 text-sm text-on-surface-variant">
-          <span>📤 {{ campaign.sentCount }} inviati</span>
-          <span>❌ {{ campaign.failedCount }} falliti</span>
-          <span>⏱️ {{ campaign.delayMin }}–{{ campaign.delayMax }}s delay</span>
+          <span>{{ t('campaigns.sent_count', { count: campaign.sentCount }) }}</span>
+          <span>{{ t('campaigns.failed_count', { count: campaign.failedCount }) }}</span>
+          <span>{{ t('campaigns.delay_range', { min: campaign.delayMin, max: campaign.delayMax }) }}</span>
         </div>
       </div>
     </div>
@@ -64,7 +68,7 @@
     <Teleport to="body">
       <div v-if="showWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showWizard = false">
         <div class="w-full max-w-xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
-          <h3 class="text-lg font-bold text-on-surface mb-6">Crea Nuova Campagna</h3>
+          <h3 class="text-lg font-bold text-on-surface mb-6">{{ t('campaigns.create_title') }}</h3>
 
           <!-- Step indicators -->
           <div class="flex gap-2 mb-6">
@@ -74,58 +78,104 @@
 
           <!-- Step 1: Name -->
           <div v-if="wizardStep === 1" class="space-y-4">
-            <label class="block text-sm font-medium text-on-surface-variant">Nome Campagna</label>
-            <input v-model="newCampaign.name" type="text" placeholder="Es: Promo Estate 2026"
+            <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.name_label') }}</label>
+            <input v-model="newCampaign.name" type="text" :placeholder="t('campaigns.name_placeholder')"
                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
           </div>
 
           <!-- Step 2: Template -->
           <div v-if="wizardStep === 2" class="space-y-4">
-            <label class="block text-sm font-medium text-on-surface-variant">Template Messaggio</label>
+            <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.template_label') }}</label>
             <select v-model="newCampaign.templateId"
                     class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none">
-              <option value="" disabled>Seleziona template...</option>
+              <option value="" disabled>{{ t('campaigns.template_select') }}</option>
               <option v-for="tmpl in templates" :key="tmpl.id" :value="tmpl.id">{{ tmpl.name }}</option>
             </select>
             
             <div v-if="selectedTemplatePreview" class="mt-4 p-4 bg-black/20 border border-white/5 rounded-xl">
-              <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-2 block">Anteprima Messaggio</span>
+              <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-2 block">{{ t('campaigns.preview_label') }}</span>
               <div class="text-sm text-on-surface whitespace-pre-wrap leading-relaxed" v-html="selectedTemplatePreview"></div>
             </div>
           </div>
 
           <!-- Step 3: Rate Limit -->
           <div v-if="wizardStep === 3" class="space-y-4">
-            <label class="block text-sm font-medium text-on-surface-variant">Ritardo tra messaggi (secondi)</label>
+            <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.delay_label') }}</label>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="text-xs text-on-surface-variant">Min</label>
+                <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_min') }}</label>
                 <input v-model.number="newCampaign.delayMin" type="number" min="5" max="300"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
               <div>
-                <label class="text-xs text-on-surface-variant">Max</label>
+                <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_max') }}</label>
                 <input v-model.number="newCampaign.delayMax" type="number" min="10" max="600"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
             </div>
-            <p class="text-xs text-on-surface-variant">Contatti: TUTTI</p>
+            <p class="text-xs text-on-surface-variant">{{ t('campaigns.contacts_all') }}</p>
           </div>
 
           <div class="flex justify-between mt-6">
             <button @click="wizardStep > 1 ? wizardStep-- : showWizard = false"
                     class="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-              {{ wizardStep > 1 ? '← Indietro' : 'Annulla' }}
+              {{ wizardStep > 1 ? t('campaigns.btn_back') : t('campaigns.btn_cancel') }}
             </button>
             <button v-if="wizardStep < 3" @click="wizardStep++"
                     :disabled="wizardStep === 1 && !newCampaign.name || wizardStep === 2 && !newCampaign.templateId"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg transition-all disabled:opacity-30">
-              Avanti →
+              {{ t('campaigns.btn_next') }}
             </button>
             <button v-else @click="handleCreate"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] transition-all">
-              Crea Campagna
+              {{ t('campaigns.btn_create') }}
             </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Logs Modal -->
+    <Teleport to="body">
+      <div v-if="showLogsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showLogsModal = false">
+        <div class="w-full max-w-3xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in max-h-[80vh] flex flex-col">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-on-surface">Log Campagna</h3>
+            <button @click="showLogsModal = false" class="p-2 hover:bg-white/10 rounded-lg transition-colors"><X class="w-4 h-4" /></button>
+          </div>
+
+          <div class="overflow-auto flex-1">
+            <table class="w-full text-left text-sm">
+              <thead class="text-on-surface-variant border-b border-white/10">
+                <tr>
+                  <th class="pb-3 px-2">Data</th>
+                  <th class="pb-3 px-2">Contatto</th>
+                  <th class="pb-3 px-2">Telefono</th>
+                  <th class="pb-3 px-2">Stato</th>
+                  <th class="pb-3 px-2">Errore</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <tr v-if="logsLoading" class="animate-pulse">
+                  <td colspan="5" class="py-6 text-center text-on-surface-variant">Caricamento log...</td>
+                </tr>
+                <tr v-else-if="campaignLogs.length === 0">
+                  <td colspan="5" class="py-6 text-center text-on-surface-variant">Nessun log trovato per questa campagna.</td>
+                </tr>
+                <tr v-else v-for="log in campaignLogs" :key="log.id" class="hover:bg-white/5">
+                  <td class="py-3 px-2 text-on-surface-variant">{{ new Date(log.createdAt).toLocaleString() }}</td>
+                  <td class="py-3 px-2 font-medium">{{ log.contact?.name }}</td>
+                  <td class="py-3 px-2 text-on-surface-variant">{{ log.contact?.fullPhone }}</td>
+                  <td class="py-3 px-2">
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                          :class="log.status === 'SENT' ? 'bg-primary/20 text-primary' : 'bg-error/20 text-error'">
+                      {{ log.status }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-2 text-error text-xs">{{ log.errorReason || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -134,8 +184,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Plus, Play, Pause } from 'lucide-vue-next'
+import { ref, onMounted, computed, inject } from 'vue'
+import { Plus, Play, Pause, Eye, X } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useCampaignsStore } from '~/stores/campaigns'
 
@@ -147,9 +197,36 @@ const wizardStep = ref(1)
 const templates = ref<any[]>([])
 const newCampaign = ref({ name: '', templateId: '', delayMin: 15, delayMax: 45 })
 
+const showLogsModal = ref(false)
+const logsLoading = ref(false)
+const campaignLogs = ref<any[]>([])
+const addToast = inject('addToast') as Function
+
+async function openLogs(campaignId: string) {
+  showLogsModal.value = true
+  logsLoading.value = true
+  campaignLogs.value = []
+  try {
+    const res = await $fetch<{ data: any[] }>(`/api/campaigns/${campaignId}/messages`)
+    campaignLogs.value = res.data
+  } catch (e: any) {
+    addToast('Errore durante il caricamento dei log', 'error')
+  } finally {
+    logsLoading.value = false
+  }
+}
+
 function formatWhatsAppText(text: string) {
   if (!text) return ''
-  return text
+  
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
+  return escaped
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/~(.*?)~/g, '<del>$1</del>')

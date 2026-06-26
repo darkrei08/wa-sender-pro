@@ -4,7 +4,7 @@
  */
 
 const WUZAPI_URL = process.env.WUZAPI_URL || 'http://localhost:3100'
-const WUZAPI_TOKEN = process.env.WUZAPI_TOKEN || 'secret-token'
+const WUZAPI_TOKEN = process.env.WUZAPI_TOKEN || ''
 
 const defaultHeaders = {
   'Content-Type': 'application/json',

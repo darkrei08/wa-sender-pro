@@ -37,6 +37,10 @@ export default defineEventHandler((event) => {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
 
+  // Configurare limiti diversi per l'auth (prevenzione brute-force)
+  const isAuth = path.startsWith('/api/auth/')
+  const limit = isAuth ? 10 : MAX_REQUESTS
+
   let entry = store.get(ip)
 
   if (!entry || now > entry.resetAt) {
@@ -47,11 +51,11 @@ export default defineEventHandler((event) => {
   }
 
   // Set rate limit headers
-  event.node.res.setHeader('X-RateLimit-Limit', MAX_REQUESTS.toString())
-  event.node.res.setHeader('X-RateLimit-Remaining', Math.max(0, MAX_REQUESTS - entry.count).toString())
+  event.node.res.setHeader('X-RateLimit-Limit', limit.toString())
+  event.node.res.setHeader('X-RateLimit-Remaining', Math.max(0, limit - entry.count).toString())
   event.node.res.setHeader('X-RateLimit-Reset', Math.ceil(entry.resetAt / 1000).toString())
 
-  if (entry.count > MAX_REQUESTS) {
+  if (entry.count > limit) {
     securityLog.rateLimited(ip)
     throw createError({
       statusCode: 429,

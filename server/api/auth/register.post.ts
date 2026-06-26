@@ -1,15 +1,28 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../utils/prisma'
 import { signJWT } from '../../utils/jwt'
-import { setCookie } from 'h3'
+import { setCookie, readBody, createError, defineEventHandler, getRequestIP } from 'h3'
+import { z } from 'zod'
+import { securityLog } from '~/lib/security-logger'
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  name: z.string().min(2),
+  teamName: z.string().optional()
+})
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { email, password, name, teamName } = body
-
-  if (!email || !password || !name) {
-    throw createError({ statusCode: 400, message: 'Missing required fields' })
+  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+  
+  const parsed = registerSchema.safeParse(body)
+  if (!parsed.success) {
+    securityLog.validationError(event.path, parsed.error)
+    throw createError({ statusCode: 400, message: 'Formato dati non valido' })
   }
+  
+  const { email, password, name, teamName } = parsed.data
 
   // Controlla se esiste già l'utente
   const existingUser = await prisma.user.findUnique({ where: { email } })
@@ -58,9 +71,12 @@ export default defineEventHandler(async (event) => {
   setCookie(event, 'auth_token', token, {
     httpOnly: true,
     secure: isSecure,
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/'
   })
+
+  securityLog.authSuccess(ip)
 
   return { 
     success: true, 
