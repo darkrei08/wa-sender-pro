@@ -1,10 +1,10 @@
 <template>
   <div class="p-8 space-y-6 animate-fade-in">
     <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-on-surface tracking-tight">{{ t('nav.campaigns') }}</h1>
+      <h1 class="text-3xl font-bold text-on-surface tracking-tight">{{ t('campaigns.title') }}</h1>
       <button @click="showWizard = true"
               class="px-5 py-2.5 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] hover:shadow-[0_0_25px_rgba(37,211,102,0.5)] transition-all flex items-center gap-2">
-        <Plus class="w-5 h-5" /> Nuova Campagna
+        <Plus class="w-5 h-5" /> {{ t('campaigns.new') }}
       </button>
     </div>
 
@@ -13,7 +13,7 @@
       <div class="absolute -top-16 -right-16 w-48 h-48 bg-primary/15 rounded-full blur-[80px] pointer-events-none"></div>
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h3 class="font-semibold text-on-surface">Campagna in corso</h3>
+          <h3 class="font-semibold text-on-surface">{{ t('campaigns.active_progress') }}</h3>
           <p class="text-sm text-on-surface-variant">{{ store.activeProgress.sentCount + store.activeProgress.failedCount }} / {{ store.activeProgress.totalCount }}</p>
         </div>
         <span class="text-2xl font-bold text-primary">{{ store.activeProgress.progress }}%</span>
@@ -53,9 +53,9 @@
           </div>
         </div>
         <div class="flex gap-6 mt-4 text-sm text-on-surface-variant">
-          <span>📤 {{ campaign.sentCount }} inviati</span>
-          <span>❌ {{ campaign.failedCount }} falliti</span>
-          <span>⏱️ {{ campaign.delayMin }}–{{ campaign.delayMax }}s delay</span>
+          <span>{{ t('campaigns.sent_count', { count: campaign.sentCount }) }}</span>
+          <span>{{ t('campaigns.failed_count', { count: campaign.failedCount }) }}</span>
+          <span>{{ t('campaigns.delay_range', { min: campaign.delayMin, max: campaign.delayMax }) }}</span>
         </div>
       </div>
     </div>
@@ -64,7 +64,7 @@
     <Teleport to="body">
       <div v-if="showWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showWizard = false">
         <div class="w-full max-w-xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
-          <h3 class="text-lg font-bold text-on-surface mb-6">Crea Nuova Campagna</h3>
+          <h3 class="text-lg font-bold text-on-surface mb-6">{{ t('campaigns.create_title') }}</h3>
 
           <!-- Step indicators -->
           <div class="flex gap-2 mb-6">
@@ -74,57 +74,57 @@
 
           <!-- Step 1: Name -->
           <div v-if="wizardStep === 1" class="space-y-4">
-            <label class="block text-sm font-medium text-on-surface-variant">Nome Campagna</label>
-            <input v-model="newCampaign.name" type="text" placeholder="Es: Promo Estate 2026"
+            <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.name_label') }}</label>
+            <input v-model="newCampaign.name" type="text" :placeholder="t('campaigns.name_placeholder')"
                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
           </div>
 
           <!-- Step 2: Template -->
           <div v-if="wizardStep === 2" class="space-y-4">
-            <label class="block text-sm font-medium text-on-surface-variant">Template Messaggio</label>
+            <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.template_label') }}</label>
             <select v-model="newCampaign.templateId"
                     class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none">
-              <option value="" disabled>Seleziona template...</option>
+              <option value="" disabled>{{ t('campaigns.template_select') }}</option>
               <option v-for="tmpl in templates" :key="tmpl.id" :value="tmpl.id">{{ tmpl.name }}</option>
             </select>
             
             <div v-if="selectedTemplatePreview" class="mt-4 p-4 bg-black/20 border border-white/5 rounded-xl">
-              <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-2 block">Anteprima Messaggio</span>
+              <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-2 block">{{ t('campaigns.preview_label') }}</span>
               <div class="text-sm text-on-surface whitespace-pre-wrap leading-relaxed" v-html="selectedTemplatePreview"></div>
             </div>
           </div>
 
           <!-- Step 3: Rate Limit -->
           <div v-if="wizardStep === 3" class="space-y-4">
-            <label class="block text-sm font-medium text-on-surface-variant">Ritardo tra messaggi (secondi)</label>
+            <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.delay_label') }}</label>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="text-xs text-on-surface-variant">Min</label>
+                <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_min') }}</label>
                 <input v-model.number="newCampaign.delayMin" type="number" min="5" max="300"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
               <div>
-                <label class="text-xs text-on-surface-variant">Max</label>
+                <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_max') }}</label>
                 <input v-model.number="newCampaign.delayMax" type="number" min="10" max="600"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
             </div>
-            <p class="text-xs text-on-surface-variant">Contatti: TUTTI</p>
+            <p class="text-xs text-on-surface-variant">{{ t('campaigns.contacts_all') }}</p>
           </div>
 
           <div class="flex justify-between mt-6">
             <button @click="wizardStep > 1 ? wizardStep-- : showWizard = false"
                     class="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-              {{ wizardStep > 1 ? '← Indietro' : 'Annulla' }}
+              {{ wizardStep > 1 ? t('campaigns.btn_back') : t('campaigns.btn_cancel') }}
             </button>
             <button v-if="wizardStep < 3" @click="wizardStep++"
                     :disabled="wizardStep === 1 && !newCampaign.name || wizardStep === 2 && !newCampaign.templateId"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg transition-all disabled:opacity-30">
-              Avanti →
+              {{ t('campaigns.btn_next') }}
             </button>
             <button v-else @click="handleCreate"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] transition-all">
-              Crea Campagna
+              {{ t('campaigns.btn_create') }}
             </button>
           </div>
         </div>

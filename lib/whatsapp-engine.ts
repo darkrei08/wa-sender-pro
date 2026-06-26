@@ -62,6 +62,8 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
     cache: 'no-store',
   })
 
+  let data: any
+  
   if (!res.ok) {
     if (res.status === 401 && ENGINE === 'wuzapi' && retry) {
       // Auto-provision user for fresh Docker setups
@@ -80,11 +82,20 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
       }
     }
 
-    const txt = await res.text()
-    throw new Error(`[${ENGINE}] ${res.status}: ${txt}`)
+    try {
+      data = await res.json()
+    } catch {
+      const txt = await res.text()
+      throw new Error(`[${ENGINE}] ${res.status}: ${txt}`)
+    }
+    
+    // Fallback if no specific code is handled
+    if (data.code !== 'DEVICE_NOT_FOUND') {
+      throw new Error(`[${ENGINE}] ${res.status}: ${JSON.stringify(data)}`)
+    }
+  } else {
+    data = await res.json()
   }
-
-  const data = await res.json()
 
   // Auto-provision gowa device for fresh setups
   if (ENGINE === 'gowa' && data.code === 'DEVICE_NOT_FOUND' && retry) {

@@ -39,7 +39,7 @@
           </span>
         </div>
       </div>
-      <p v-else class="text-on-surface-variant text-sm">Nessuna campagna ancora.</p>
+      <p v-else class="text-on-surface-variant text-sm">{{ t('dashboard.no_campaigns') }}</p>
     </div>
   </div>
 </template>
@@ -64,10 +64,10 @@ onMounted(async () => {
 })
 
 const kpis = computed(() => [
-  { label: t('dashboard.total_contacts'), value: stats.value?.totalContacts ?? '—', icon: Users, iconBg: 'bg-primary/10', iconColor: 'text-primary', glow: 'bg-primary/20', sub: `${stats.value?.activeContacts ?? 0} attivi` },
+  { label: t('dashboard.total_contacts'), value: stats.value?.totalContacts ?? '—', icon: Users, iconBg: 'bg-primary/10', iconColor: 'text-primary', glow: 'bg-primary/20', sub: t('dashboard.active_count', { count: stats.value?.activeContacts ?? 0 }) },
   { label: t('dashboard.active_campaigns'), value: stats.value?.activeCampaigns ?? '—', icon: Megaphone, iconBg: 'bg-secondary/10', iconColor: 'text-secondary', glow: 'bg-secondary/20' },
-  { label: t('dashboard.messages_sent'), value: stats.value?.sentMessages ?? '—', icon: Send, iconBg: 'bg-tertiary/10', iconColor: 'text-tertiary', glow: 'bg-tertiary/20', sub: `${stats.value?.failedMessages ?? 0} falliti` },
-  { label: 'Success Rate', value: stats.value ? `${stats.value.successRate}%` : '—', icon: TrendingUp, iconBg: 'bg-primary/10', iconColor: 'text-primary', glow: 'bg-primary/20' },
+  { label: t('dashboard.messages_sent'), value: stats.value?.sentMessages ?? '—', icon: Send, iconBg: 'bg-tertiary/10', iconColor: 'text-tertiary', glow: 'bg-tertiary/20', sub: t('dashboard.failed_count', { count: stats.value?.failedMessages ?? 0 }) },
+  { label: t('dashboard.success_rate'), value: stats.value ? `${stats.value.successRate}%` : '—', icon: TrendingUp, iconBg: 'bg-primary/10', iconColor: 'text-primary', glow: 'bg-primary/20' },
 ])
 
 function statusClass(status: string) {

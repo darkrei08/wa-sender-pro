@@ -1,5 +1,26 @@
 <template>
   <div class="min-h-screen bg-surface dark:bg-[#12161f] text-on-surface transition-colors duration-300 flex">
+    <!-- Toast Notifications -->
+    <Teleport to="body">
+      <TransitionGroup name="toast" tag="div" class="fixed top-4 right-4 z-[100] flex flex-col gap-3 pointer-events-none">
+        <div v-for="toast in toasts" :key="toast.id"
+             class="pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl backdrop-blur-xl animate-slide-in-right min-w-[300px] max-w-[420px]"
+             :class="toast.type === 'success'
+               ? 'bg-primary/15 border-primary/30 text-primary'
+               : toast.type === 'error'
+                 ? 'bg-error/15 border-error/30 text-error'
+                 : 'bg-surface-container border-white/10 text-on-surface'">
+          <CheckCircle2 v-if="toast.type === 'success'" class="w-5 h-5 shrink-0" />
+          <AlertCircle v-else-if="toast.type === 'error'" class="w-5 h-5 shrink-0" />
+          <Info v-else class="w-5 h-5 shrink-0" />
+          <span class="text-sm font-medium">{{ toast.message }}</span>
+          <button @click="removeToast(toast.id)" class="ml-auto p-1 rounded-full hover:bg-white/10 transition-colors shrink-0">
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </TransitionGroup>
+    </Teleport>
+
     <!-- Sidebar -->
     <aside class="w-[280px] bg-surface-container/50 backdrop-blur-xl border-r border-black/5 dark:border-white/5 flex flex-col justify-between">
       <div class="p-6">
@@ -11,7 +32,7 @@
             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ authStore.currentTeam?.name || 'Workspace' }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ authStore.user?.email }}</p>
           </div>
-          <button @click="authStore.logout" class="p-2 hover:bg-red-500/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-colors" title="Logout">
+          <button @click="authStore.logout" class="p-2 hover:bg-red-500/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-colors" :title="t('common.logout')">
             <LogOut class="w-4 h-4" />
           </button>
         </div>
@@ -24,7 +45,7 @@
           <NuxtLink :to="localePath('/connect')" class="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors" active-class="bg-primary/10 text-primary border-l-2 border-primary">
             <div class="flex items-center gap-3">
               <QrCode class="w-5 h-5" />
-              <span class="font-medium text-sm">{{ t('connect.title') }}</span>
+              <span class="font-medium text-sm">{{ t('nav.connect') }}</span>
             </div>
             <div class="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" :class="waStore.connected ? 'bg-primary shadow-primary/50' : 'bg-red-500 shadow-red-500/50'"></div>
           </NuxtLink>
@@ -68,8 +89,8 @@
           </button>
           
           <div class="flex gap-2">
-            <NuxtLink :to="switchLocalePath('en')" class="text-xs font-bold px-2 py-1 rounded" :class="locale === 'en' ? 'bg-primary text-surface' : 'text-gray-400 hover:text-white'">EN</NuxtLink>
-            <NuxtLink :to="switchLocalePath('it')" class="text-xs font-bold px-2 py-1 rounded" :class="locale === 'it' ? 'bg-primary text-surface' : 'text-gray-400 hover:text-white'">IT</NuxtLink>
+            <button @click="setLocale('en')" class="text-xs font-bold px-2 py-1 rounded transition-colors" :class="locale === 'en' ? 'bg-primary text-surface' : 'text-gray-400 hover:text-white'">EN</button>
+            <button @click="setLocale('it')" class="text-xs font-bold px-2 py-1 rounded transition-colors" :class="locale === 'it' ? 'bg-primary text-surface' : 'text-gray-400 hover:text-white'">IT</button>
           </div>
         </div>
 
@@ -94,25 +115,85 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { LayoutDashboard, Users, Megaphone, Settings, Activity, QrCode, Sun, Moon, LogOut, MessageSquareText, MessageCircle, Lock } from 'lucide-vue-next'
-import { useI18n, useLocalePath, useSwitchLocalePath } from '#i18n'
+import { ref, onMounted, watch } from 'vue'
+import { LayoutDashboard, Users, Megaphone, Settings, Activity, QrCode, Sun, Moon, LogOut, MessageSquareText, MessageCircle, Lock, CheckCircle2, AlertCircle, Info, X } from 'lucide-vue-next'
+import { useI18n, useLocalePath } from '#i18n'
 import { useColorMode } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { useWhatsappStore } from '~/stores/whatsapp'
 
-const { t, locale } = useI18n()
+const { t, locale, setLocale } = useI18n()
 const localePath = useLocalePath()
-const switchLocalePath = useSwitchLocalePath()
 const colorMode = useColorMode()
 const authStore = useAuthStore()
 const waStore = useWhatsappStore()
 
+// Toast System
+interface Toast {
+  id: number
+  message: string
+  type: 'success' | 'error' | 'info'
+}
+
+const toasts = ref<Toast[]>([])
+let toastId = 0
+
+function addToast(message: string, type: Toast['type'] = 'info', duration = 4000) {
+  const id = ++toastId
+  toasts.value.push({ id, message, type })
+  setTimeout(() => removeToast(id), duration)
+}
+
+function removeToast(id: number) {
+  toasts.value = toasts.value.filter(t => t.id !== id)
+}
+
+// Watch for WhatsApp connection changes to show toast
+let prevConnected = false
+watch(() => waStore.connected, (newVal) => {
+  if (newVal && !prevConnected) {
+    addToast(t('common.toast_connected'), 'success', 5000)
+  }
+  prevConnected = newVal
+})
+
 onMounted(() => {
   waStore.fetchStatus()
+  prevConnected = waStore.connected
 })
 
 const toggleColorMode = () => {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
+
+// Expose toast function globally via provide
+provide('addToast', addToast)
 </script>
+
+<style>
+@keyframes slide-in-right {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s ease-out;
+}
+
+.toast-enter-active {
+  animation: slide-in-right 0.35s ease-out;
+}
+
+.toast-leave-active {
+  transition: all 0.3s ease-in;
+}
+
+.toast-leave-to {
+  transform: translateX(120%);
+  opacity: 0;
+}
+
+.toast-move {
+  transition: transform 0.3s ease;
+}
+</style>

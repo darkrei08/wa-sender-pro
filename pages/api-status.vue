@@ -13,8 +13,8 @@
             <Wifi class="w-7 h-7" :class="waStore.connected ? 'text-primary' : 'text-error'" />
           </div>
           <div>
-            <h2 class="text-xl font-bold text-on-surface">WhatsApp Engine</h2>
-            <p class="text-sm text-on-surface-variant">{{ waStore.engine.toUpperCase() }} — {{ waStore.connected ? 'Connesso' : 'Disconnesso' }}</p>
+            <h2 class="text-xl font-bold text-on-surface">{{ t('api_status.engine_title') }}</h2>
+            <p class="text-sm text-on-surface-variant">{{ waStore.engine.toUpperCase() }} — {{ waStore.connected ? t('api_status.status_connected') : t('api_status.status_disconnected') }}</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -22,12 +22,12 @@
             ? 'bg-primary shadow-[0_0_10px_rgba(37,211,102,0.8)] animate-glow-pulse'
             : 'bg-error shadow-[0_0_10px_rgba(255,59,48,0.8)]'"></span>
           <span class="text-sm font-semibold" :class="waStore.connected ? 'text-primary' : 'text-error'">
-            {{ waStore.connected ? 'ONLINE' : 'OFFLINE' }}
+            {{ waStore.connected ? t('api_status.online') : t('api_status.offline') }}
           </span>
         </div>
       </div>
       <div v-if="waStore.phone" class="mt-4 p-3 bg-white/5 rounded-lg">
-        <p class="text-sm text-on-surface-variant">Numero collegato: <span class="text-on-surface font-mono">+{{ waStore.phone }}</span></p>
+        <p class="text-sm text-on-surface-variant">{{ t('api_status.phone_label') }}: <span class="text-on-surface font-mono">+{{ waStore.phone }}</span></p>
       </div>
     </div>
 
@@ -48,10 +48,10 @@
       <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Terminal class="w-4 h-4 text-primary" />
-          <span class="text-sm font-semibold text-on-surface">Live Logs</span>
+          <span class="text-sm font-semibold text-on-surface">{{ t('api_status.logs_title') }}</span>
         </div>
         <button @click="logs = []" class="text-xs text-on-surface-variant hover:text-on-surface transition-colors">
-          Pulisci
+          {{ t('api_status.logs_clear') }}
         </button>
       </div>
       <div ref="logContainer" class="h-64 overflow-y-auto p-4 font-mono text-xs space-y-1 bg-black/30">
@@ -61,7 +61,7 @@
             {{ log.msg }}
           </span>
         </div>
-        <div v-if="!logs.length" class="text-on-surface-variant/50">In attesa di log...</div>
+        <div v-if="!logs.length" class="text-on-surface-variant/50">{{ t('api_status.logs_waiting') }}</div>
       </div>
     </div>
   </div>
@@ -81,9 +81,9 @@ const logs = ref<{ time: string; msg: string; level: string }[]>([])
 const startTime = Date.now()
 
 const metrics = ref([
-  { label: 'Uptime', value: '0s', icon: Clock },
-  { label: 'Engine', value: 'WuzAPI', icon: Cpu },
-  { label: 'DB Size', value: '—', icon: HardDrive },
+  { label: t('api_status.uptime'), value: '0s', icon: Clock },
+  { label: t('api_status.engine'), value: 'WuzAPI', icon: Cpu },
+  { label: t('api_status.db_size'), value: '—', icon: HardDrive },
 ])
 
 let statusInterval: ReturnType<typeof setInterval>
@@ -106,14 +106,14 @@ function formatUptime(ms: number) {
 
 onMounted(() => {
   waStore.fetchStatus()
-  addLog('API Status Monitor inizializzato')
-  addLog(`Engine attivo: ${waStore.engine}`)
+  addLog(t('api_status.logs_init'))
+  addLog(t('api_status.logs_engine', { engine: waStore.engine }))
 
   statusInterval = setInterval(async () => {
     await waStore.fetchStatus()
     metrics.value[0].value = formatUptime(Date.now() - startTime)
     metrics.value[1].value = waStore.engine.toUpperCase()
-    addLog(`Health check: ${waStore.connected ? 'OK' : 'DISCONNESSO'}`, waStore.connected ? 'info' : 'warn')
+    addLog(waStore.connected ? t('api_status.logs_health_ok') : t('api_status.logs_health_fail'), waStore.connected ? 'info' : 'warn')
   }, 5000)
 })
 

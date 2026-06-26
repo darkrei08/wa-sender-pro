@@ -4,16 +4,16 @@
     <!-- Left Sidebar: Conversations List -->
     <div class="w-full sm:w-[350px] flex-shrink-0 flex flex-col bg-surface-container/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
       <div class="p-4 border-b border-white/10 flex items-center justify-between">
-        <h2 class="text-xl font-bold text-on-surface tracking-tight">{{ t('nav.chat') }}</h2>
-        <span class="px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded">Live CRM</span>
+        <h2 class="text-xl font-bold text-on-surface tracking-tight">{{ t('chat.title') }}</h2>
+        <span class="px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded">{{ t('chat.badge') }}</span>
       </div>
       
       <div class="flex-1 overflow-y-auto p-2 space-y-1">
         <div v-if="store.loading && store.conversations.length === 0" class="p-4 text-center text-sm text-on-surface-variant">
-          Caricamento conversazioni...
+          {{ t('chat.loading') }}
         </div>
         <div v-else-if="store.conversations.length === 0" class="p-4 text-center text-sm text-on-surface-variant">
-          Nessuna conversazione attiva.
+          {{ t('chat.no_conversations') }}
         </div>
         
         <button v-for="conv in store.conversations" :key="conv.id" 
@@ -33,8 +33,8 @@
               </span>
             </div>
             <p class="text-xs opacity-70 truncate">
-              <span v-if="conv.latestMessage?.direction === 'OUTBOUND'">Tu: </span>
-              {{ conv.latestMessage?.content || 'Nessun messaggio' }}
+              <span v-if="conv.latestMessage?.direction === 'OUTBOUND'">{{ t('chat.you_prefix') }}</span>
+              {{ conv.latestMessage?.content || t('chat.no_messages') }}
             </p>
           </div>
         </button>
@@ -89,7 +89,7 @@
             <div class="flex-1 bg-black/30 border border-white/10 rounded-xl overflow-hidden focus-within:border-primary transition-colors">
               <textarea v-model="inputText" rows="1" 
                         @keydown.enter.exact.prevent="handleSend"
-                        placeholder="Scrivi un messaggio... (Invio per spedire)"
+                        :placeholder="t('chat.input_placeholder')"
                         class="w-full max-h-32 p-3 bg-transparent text-sm text-on-surface outline-none resize-none overflow-y-auto block"
                         ref="inputArea"></textarea>
             </div>
@@ -106,9 +106,9 @@
         <div class="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6">
           <MessageCircle class="w-12 h-12 text-primary/40" />
         </div>
-        <h3 class="text-xl font-bold text-on-surface mb-2">Web WhatsApp CRM</h3>
+        <h3 class="text-xl font-bold text-on-surface mb-2">{{ t('chat.empty_title') }}</h3>
         <p class="text-sm text-on-surface-variant max-w-sm">
-          Seleziona una conversazione dalla barra laterale per iniziare a chattare in tempo reale con i tuoi contatti.
+          {{ t('chat.empty_message') }}
         </p>
       </div>
     </div>
