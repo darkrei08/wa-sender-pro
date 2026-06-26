@@ -18,13 +18,21 @@ export const useWhatsappStore = defineStore('whatsapp', () => {
   const sessions = ref<WASession[]>([])
   const loading = ref(false)
 
+  // Derived from the first connected session (or first session overall)
   const connected = computed(() => sessions.value.some(s => s.connected))
+  const engine = computed(() => sessions.value[0]?.engine ?? 'WuzAPI')
+  const phone = computed(() => sessions.value.find(s => s.connected)?.phone ?? null)
 
   async function fetchSessions() {
     try {
       const res = await $fetch<{ data: WASession[] }>('/api/whatsapp/sessions')
       sessions.value = res.data || []
     } catch { /* silent */ }
+  }
+
+  /** Alias for fetchSessions — used by api-status page */
+  async function fetchStatus() {
+    return fetchSessions()
   }
 
   async function disconnect(tokenId: string) {
@@ -35,5 +43,5 @@ export const useWhatsappStore = defineStore('whatsapp', () => {
     await fetchSessions()
   }
 
-  return { sessions, connected, loading, fetchSessions, disconnect }
+  return { sessions, connected, loading, engine, phone, fetchSessions, fetchStatus, disconnect }
 })

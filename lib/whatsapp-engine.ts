@@ -9,7 +9,7 @@
  * Switch via env var: WHATSAPP_ENGINE=wuzapi | gowa
  */
 
-const ENGINE = (process.env.WHATSAPP_ENGINE || 'wuzapi') as 'wuzapi' | 'gowa'
+export const ENGINE = (process.env.WHATSAPP_ENGINE || 'wuzapi') as 'wuzapi' | 'gowa'
 
 const ENDPOINTS = {
   wuzapi: {
@@ -142,7 +142,9 @@ export async function getEngineStatus(token: string): Promise<EngineStatus> {
 
 export async function getQRCode(token: string): Promise<string | null> {
   try {
-    const data = await apiCall(cfg.qr, token)
+    // WuzAPI uses GET /app/qrcode; GoWA uses POST /app/login to initiate QR
+    const method = ENGINE === 'gowa' ? 'POST' : 'GET'
+    const data = await apiCall(cfg.qr, token, method)
     
     if (ENGINE === 'wuzapi') {
       const qr = data.data?.QRCode ?? data.QRCode ?? null
@@ -152,13 +154,17 @@ export async function getQRCode(token: string): Promise<string | null> {
       return qr
     } else {
       // GoWA v8 returns a URL to the PNG in data.results.qr_link
-      const qrLink = data.results?.qr_link
+      const qrLink = data.results?.qr_link ?? data.data?.qr_link ?? data.qr_link
       if (qrLink) {
         // Fetch the image from the engine and return it as base64 data URI
         // so the frontend doesn't need to directly access the engine's port
         // Also replace localhost with gowa container name if needed
-        const fetchUrl = qrLink.replace('localhost:3000', 'gowa:3000').replace('localhost:3200', 'gowa:3000')
+        const fetchUrl = qrLink
+          .replace('localhost:3000', 'gowa:3000')
+          .replace('localhost:3200', 'gowa:3000')
+          .replace('127.0.0.1:3000', 'gowa:3000')
         const imgRes = await fetch(fetchUrl)
+        if (!imgRes.ok) return null
         const arrayBuffer = await imgRes.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
         return `data:image/png;base64,${buffer.toString('base64')}`
@@ -213,4 +219,4 @@ export function renderTemplate(
   })
 }
 
-export { ENGINE }
+// ENGINE is already exported at declaration

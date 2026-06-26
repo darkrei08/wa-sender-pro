@@ -14,7 +14,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-on-surface">{{ t('api_status.engine_title') }}</h2>
-            <p class="text-sm text-on-surface-variant">{{ waStore.engine.toUpperCase() }} — {{ waStore.connected ? t('api_status.status_connected') : t('api_status.status_disconnected') }}</p>
+            <p class="text-sm text-on-surface-variant">{{ (waStore.engine || 'WuzAPI').toUpperCase() }} — {{ waStore.connected ? t('api_status.status_connected') : t('api_status.status_disconnected') }}</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -82,7 +82,7 @@ const startTime = Date.now()
 
 const metrics = ref([
   { label: t('api_status.uptime'), value: '0s', icon: Clock },
-  { label: t('api_status.engine'), value: 'WuzAPI', icon: Cpu },
+  { label: t('api_status.engine'), value: (waStore.engine || 'WuzAPI').toUpperCase(), icon: Cpu },
   { label: t('api_status.db_size'), value: '—', icon: HardDrive },
 ])
 

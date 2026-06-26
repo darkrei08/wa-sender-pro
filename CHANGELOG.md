@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-06-26
+
+### Fixed
+- **QR Code GoWA**: `getQRCode()` in `whatsapp-engine.ts` chiamava `/app/login` di go-whatsapp-web-multidevice con `GET` invece di `POST` → il QR non veniva mai generato. Corretto il metodo HTTP in base all'engine attivo.
+- **QR Code GoWA — parsing risposta**: Aggiunto fallback su `data.data?.qr_link` e `data.qr_link` per coprire varianti di risposta dell'API GoWA; aggiunto check `imgRes.ok` prima di leggere il buffer PNG; aggiunto replace di `127.0.0.1:3000` → `gowa:3000`.
+- **Pagina Stato API crash**: `waStore.engine` e `waStore.phone` non erano esposti dallo store Pinia → crash runtime silenzioso che impediva il rendering della pagina. Aggiunti come computed properties.
+- **Stato API — `fetchStatus()` mancante**: La pagina `api-status.vue` chiamava `waStore.fetchStatus()` che non esisteva. Aggiunto come alias di `fetchSessions()`.
+- **`ENGINE` doppio export**: Rimosso il re-export ridondante di `ENGINE` in fondo al file; ora è `export const` direttamente alla dichiarazione.
+
 ## [0.1.0] - 2026-06-24
 
 ### Added
