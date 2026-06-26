@@ -42,7 +42,7 @@
    - Added `enableDebugWidget` to `runtimeConfig.public` in `nuxt.config.ts`.
    - Mapped `ENABLE_DEBUG_WIDGET` to `NUXT_PUBLIC_ENABLE_DEBUG_WIDGET` in `docker-compose.yml` to support Nitro's runtime override mechanism.
 
-**Next Steps**: 
+**Next Steps**:
 Test registration endpoint, verify user creation, and monitor app behavior using the newly enabled debug widget.
 
 
@@ -74,3 +74,8 @@ WaForge Project Update - Status: COMPLETE (v2.0.1 released).
 3. Nuxt i18n Fix: Translations were failing to load in the Docker production build. Created an explicit `i18n.config.ts` file to statically import the `it.json` and `en.json` files and linked it via `vueI18n: './i18n.config.ts'` in `nuxt.config.ts`.
 4. Release v2.0.1: Changes pushed to GitHub, triggering Actions to build the newest ghcr.io/darkrei08/waforge:latest.
 
+## [Session State Snapshot] - 2026-06-26 19:44:00
+WaForge Project Update - Status: COMPLETE (v2.1.0 released locally).
+1. Missing Functions Completed: Added CSV export API and UI button, User Profile management (name and password), and Detailed Campaign Logs UI (showing sent/failed status and error reasons per message).
+2. Bugfix QR Code & Countdown: Fixed an issue where the connect screen spammed the backend for new session tokens on every countdown refresh. Preserved `tokenId` in URL and added a silent retry for when QR code generation takes slightly longer on WuzAPI, fixing the disappearing progress bar.
+3. Release v2.1.0: Merged all changes into `main` and ran `ai-release minor` locally to bump package.json and tag `v2.1.0`. Remote authentication failed, awaiting user input to manually push the release to GitHub.
