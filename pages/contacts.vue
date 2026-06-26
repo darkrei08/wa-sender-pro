@@ -10,6 +10,10 @@
                 class="px-4 py-2.5 bg-error/20 hover:bg-error/30 text-error text-sm font-semibold rounded-lg border border-error/30 transition-all">
           <Trash2 class="w-4 h-4 inline mr-1" /> {{ t('contacts.delete_selected', { count: store.selected.size }) }}
         </button>
+        <button @click="handleExport"
+                class="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-on-surface text-sm font-semibold rounded-lg border border-white/10 transition-all">
+          <Download class="w-4 h-4 inline mr-1" /> {{ t('contacts.export_csv') || 'Esporta CSV' }}
+        </button>
         <button @click="showImport = true"
                 class="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-on-surface text-sm font-semibold rounded-lg border border-white/10 transition-all">
           <Upload class="w-4 h-4 inline mr-1" /> {{ t('contacts.import_csv') }}
@@ -110,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Upload, Trash2, Search } from 'lucide-vue-next'
+import { Upload, Trash2, Search, Download } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useContactsStore } from '~/stores/contacts'
 
@@ -135,6 +139,11 @@ async function handleImport() {
 async function handleBulkDelete() {
   if (!confirm(t('contacts.confirm_delete', { count: store.selected.size }))) return
   await store.deleteContacts([...store.selected])
+}
+
+function handleExport() {
+  const url = store.search ? `/api/contacts/export?search=${encodeURIComponent(store.search)}` : '/api/contacts/export'
+  window.open(url, '_blank')
 }
 
 onMounted(() => store.fetchContacts())

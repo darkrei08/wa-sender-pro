@@ -1,15 +1,26 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../utils/prisma'
 import { signJWT } from '../../utils/jwt'
-import { setCookie } from 'h3'
+import { setCookie, readBody, createError, defineEventHandler, getRequestIP } from 'h3'
+import { z } from 'zod'
+import { securityLog } from '~/lib/security-logger'
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6)
+})
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { email, password } = body
-
-  if (!email || !password) {
-    throw createError({ statusCode: 400, message: 'Email and password required' })
+  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+  
+  const parsed = loginSchema.safeParse(body)
+  if (!parsed.success) {
+    securityLog.validationError(event.path, parsed.error)
+    throw createError({ statusCode: 400, message: 'Formato dati non valido' })
   }
+  
+  const { email, password } = parsed.data
 
   const user = await prisma.user.findUnique({
     where: { email },
@@ -17,6 +28,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    securityLog.authFailure(ip, event.path)
     throw createError({ statusCode: 401, message: 'Invalid credentials' })
   }
 
@@ -26,6 +38,7 @@ export default defineEventHandler(async (event) => {
   const role = primaryMembership?.role || 'AGENT'
 
   if (!teamId && !user.isSuperAdmin) {
+    securityLog.authFailure(ip, event.path)
     throw createError({ statusCode: 403, message: 'User does not belong to any team' })
   }
 
@@ -40,10 +53,13 @@ export default defineEventHandler(async (event) => {
   setCookie(event, 'auth_token', token, {
     httpOnly: true,
     secure: isSecure,
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/'
   })
 
+  securityLog.authSuccess(ip)
+  
   return { 
     success: true, 
     user: { id: user.id, email: user.email, name: user.name, teamId, role } 

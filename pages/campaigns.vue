@@ -42,6 +42,10 @@
             <span class="px-3 py-1 text-xs font-bold rounded-full" :class="statusClass(campaign.status)">
               {{ campaign.status }}
             </span>
+            <button @click="openLogs(campaign.id)"
+                    class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="View Logs">
+              <Eye class="w-4 h-4" />
+            </button>
             <button v-if="campaign.status === 'DRAFT'" @click="store.startCampaign(campaign.id)"
                     class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
               <Play class="w-4 h-4" />
@@ -130,12 +134,58 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Logs Modal -->
+    <Teleport to="body">
+      <div v-if="showLogsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showLogsModal = false">
+        <div class="w-full max-w-3xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in max-h-[80vh] flex flex-col">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-on-surface">Log Campagna</h3>
+            <button @click="showLogsModal = false" class="p-2 hover:bg-white/10 rounded-lg transition-colors"><X class="w-4 h-4" /></button>
+          </div>
+
+          <div class="overflow-auto flex-1">
+            <table class="w-full text-left text-sm">
+              <thead class="text-on-surface-variant border-b border-white/10">
+                <tr>
+                  <th class="pb-3 px-2">Data</th>
+                  <th class="pb-3 px-2">Contatto</th>
+                  <th class="pb-3 px-2">Telefono</th>
+                  <th class="pb-3 px-2">Stato</th>
+                  <th class="pb-3 px-2">Errore</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <tr v-if="logsLoading" class="animate-pulse">
+                  <td colspan="5" class="py-6 text-center text-on-surface-variant">Caricamento log...</td>
+                </tr>
+                <tr v-else-if="campaignLogs.length === 0">
+                  <td colspan="5" class="py-6 text-center text-on-surface-variant">Nessun log trovato per questa campagna.</td>
+                </tr>
+                <tr v-else v-for="log in campaignLogs" :key="log.id" class="hover:bg-white/5">
+                  <td class="py-3 px-2 text-on-surface-variant">{{ new Date(log.createdAt).toLocaleString() }}</td>
+                  <td class="py-3 px-2 font-medium">{{ log.contact?.name }}</td>
+                  <td class="py-3 px-2 text-on-surface-variant">{{ log.contact?.fullPhone }}</td>
+                  <td class="py-3 px-2">
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                          :class="log.status === 'SENT' ? 'bg-primary/20 text-primary' : 'bg-error/20 text-error'">
+                      {{ log.status }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-2 text-error text-xs">{{ log.errorReason || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Plus, Play, Pause } from 'lucide-vue-next'
+import { ref, onMounted, computed, inject } from 'vue'
+import { Plus, Play, Pause, Eye, X } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useCampaignsStore } from '~/stores/campaigns'
 
@@ -147,9 +197,36 @@ const wizardStep = ref(1)
 const templates = ref<any[]>([])
 const newCampaign = ref({ name: '', templateId: '', delayMin: 15, delayMax: 45 })
 
+const showLogsModal = ref(false)
+const logsLoading = ref(false)
+const campaignLogs = ref<any[]>([])
+const addToast = inject('addToast') as Function
+
+async function openLogs(campaignId: string) {
+  showLogsModal.value = true
+  logsLoading.value = true
+  campaignLogs.value = []
+  try {
+    const res = await $fetch<{ data: any[] }>(`/api/campaigns/${campaignId}/messages`)
+    campaignLogs.value = res.data
+  } catch (e: any) {
+    addToast('Errore durante il caricamento dei log', 'error')
+  } finally {
+    logsLoading.value = false
+  }
+}
+
 function formatWhatsAppText(text: string) {
   if (!text) return ''
-  return text
+  
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
+  return escaped
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/~(.*?)~/g, '<del>$1</del>')

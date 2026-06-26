@@ -183,7 +183,8 @@ const fetchQrCode = async () => {
   
   loadingQr.value = true
   try {
-    const res = await $fetch<{ data: { qrCode: string | null, tokenId: string } }>('/api/whatsapp/qr')
+    const url = tokenId.value ? `/api/whatsapp/qr?tokenId=${tokenId.value}` : '/api/whatsapp/qr'
+    const res = await $fetch<{ data: { qrCode: string | null, tokenId: string } }>(url)
     qrCodeData.value = res.data?.qrCode || null
     if (res.data?.tokenId) {
       tokenId.value = res.data.tokenId
@@ -256,6 +257,9 @@ const pollStatus = async () => {
   if (localConnected.value) {
     qrCodeData.value = null
     stopCountdown()
+  } else if (tokenId.value && !qrCodeData.value && !loadingQr.value) {
+    // If not connected and we don't have a QR code yet (e.g. still generating), keep trying
+    fetchQrCode()
   }
 }
 

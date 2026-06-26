@@ -100,7 +100,15 @@ const formData = ref({ id: '', name: '', description: '', body: '' })
 
 function formatWhatsAppText(text: string) {
   if (!text) return ''
-  return text
+  
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
+  return escaped
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/~(.*?)~/g, '<del>$1</del>')

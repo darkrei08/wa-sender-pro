@@ -103,6 +103,10 @@
             <UserPlus class="w-5 h-5" />
             <span class="font-medium text-sm">{{ t('nav.team') }}</span>
           </NuxtLink>
+          <NuxtLink :to="localePath('/profile')" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors" active-class="bg-primary/10 text-primary">
+            <UserCircle class="w-5 h-5" />
+            <span class="font-medium text-sm">{{ t('nav.profile') || 'Profilo' }}</span>
+          </NuxtLink>
           <NuxtLink :to="localePath('/settings')" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors" active-class="bg-primary/10 text-primary">
             <Settings class="w-5 h-5" />
             <span class="font-medium text-sm">{{ t('nav.settings') }}</span>
@@ -124,7 +128,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { LayoutDashboard, Users, Megaphone, Settings, Activity, QrCode, Sun, Moon, LogOut, MessageSquareText, MessageCircle, Lock, CheckCircle2, AlertCircle, Info, X, Smartphone, UserPlus } from 'lucide-vue-next'
+import { LayoutDashboard, Users, Megaphone, Settings, Activity, QrCode, Sun, Moon, LogOut, MessageSquareText, MessageCircle, Lock, CheckCircle2, AlertCircle, Info, X, Smartphone, UserPlus, UserCircle } from 'lucide-vue-next'
 import { useI18n, useLocalePath } from '#i18n'
 import { useColorMode } from '#imports'
 import { useAuthStore } from '~/stores/auth'

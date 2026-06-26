@@ -121,3 +121,26 @@ export function parseCSV(text: string): ParseResult {
 
   return { contacts, errors, totalRows: lines.length - 1 }
 }
+
+/**
+ * Generate CSV string from contacts
+ */
+export function generateCSV(contacts: Partial<ParsedContact>[]): string {
+  if (contacts.length === 0) return ''
+
+  const headers = ['Name', 'Prefix', 'Phone', 'Email', 'Company']
+  const rows = [headers.join(',')]
+
+  for (const contact of contacts) {
+    const row = [
+      `"${(contact.name || '').replace(/"/g, '""')}"`,
+      `"${(contact.prefix || '').replace(/"/g, '""')}"`,
+      `"${(contact.phone || '').replace(/"/g, '""')}"`,
+      `"${(contact.email || '').replace(/"/g, '""')}"`,
+      `"${(contact.company || '').replace(/"/g, '""')}"`
+    ]
+    rows.push(row.join(','))
+  }
+
+  return rows.join('\n')
+}

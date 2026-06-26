@@ -90,8 +90,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-waforge}
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     networks:
@@ -107,8 +107,8 @@ services:
     image: redis:7-alpine
     container_name: waforge-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     networks:
