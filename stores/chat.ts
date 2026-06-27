@@ -7,8 +7,11 @@ export interface ChatMessage {
   teamId: string
   contactId: string
   direction: 'INBOUND' | 'OUTBOUND'
+  type?: string
   content: string
+  wamid?: string
   status: string
+  metadata?: any
   createdAt: string
   sender?: { name: string } | null
 }
@@ -114,6 +117,18 @@ export const useChatStore = defineStore('chat', () => {
           } else {
             // Need to fetch new conversation if it doesn't exist
             fetchConversations()
+          }
+        }
+        
+        if (payload.type === 'message_ack' && payload.data) {
+          const ackMsg = payload.data as ChatMessage
+          const cid = ackMsg.contactId
+          if (messages.value[cid]) {
+            const existingMsgIndex = messages.value[cid].findIndex(m => m.id === ackMsg.id || m.wamid === ackMsg.wamid)
+            if (existingMsgIndex !== -1) {
+              // Update status
+              messages.value[cid][existingMsgIndex].status = ackMsg.status
+            }
           }
         }
       } catch (err) {

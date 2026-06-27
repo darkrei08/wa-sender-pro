@@ -76,7 +76,6 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
         // Ignore and fall through
       }
     }
-    
     return res
   } catch (err: any) {
     if (err.response) {

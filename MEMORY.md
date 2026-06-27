@@ -179,3 +179,11 @@ WaForge Project Update - Fixes:
 1. **Profile UI & i18n**: Left-aligned the profile block in `pages/profile.vue` by removing `mx-auto`. Added missing `profile.title` string to `it.json` and `en.json`.
 2. **Template Variables UI**: Fixed the placeholder legend in `pages/templates.vue` from `{{Name}}` to `{Name}` to match the actual variable interpolation engine in `whatsapp-engine.ts`.
 3. **Fetch Body Error**: Refactored `apiCall` in `lib/whatsapp-engine.ts` to use `$fetch` instead of native `fetch`. This resolves the `TypeError: Body is unusable: Body has already been read` error that occurred when requests were retried or redirected by the engine, which caused the native `Response.text()` to throw and log as `FAILED` in campaign histories.
+
+## [2026-06-27 17:03:00] GOWA Integration
+- Aggiunti modelli WhatsAppConversation e WhatsAppScheduledMessage a schema.prisma.
+- Creato GowaClient (lib/gowa-client.ts) per interazione Cloud API.
+- Sviluppata policy di opt-in/opt-out (lib/whatsapp-policy.ts).
+- Creazione Webhook GOWA sicuro con HMAC (server/api/webhook/gowa.ts).
+- Aggiornamento stores/chat.ts per UI e stati in real-time.
+- Cron worker Nitro implementato (server/tasks/whatsapp-scheduled.ts).
