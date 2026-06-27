@@ -104,7 +104,7 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
       await fetch(`${cfg.base}/devices`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ device_id: 'waforge-default' })
+        body: JSON.stringify({ device_id: token })
       })
       return apiCall(path, token, method, body, false)
     } catch (e) {
@@ -143,8 +143,8 @@ export async function getEngineStatus(token: string): Promise<EngineStatus> {
 
 export async function getQRCode(token: string): Promise<string | null> {
   try {
-    // WuzAPI uses GET /app/qrcode; GoWA uses POST /app/login to initiate QR
-    const method = ENGINE === 'gowa' ? 'POST' : 'GET'
+    // WuzAPI uses GET /app/qrcode; GoWA uses GET /app/login to initiate QR
+    const method = 'GET'
     const data = await apiCall(cfg.qr, token, method)
     
     if (ENGINE === 'wuzapi') {
