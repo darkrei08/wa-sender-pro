@@ -71,15 +71,20 @@
                       <li><code>{{Email}}</code> - Indirizzo Email</li>
                       <li><code>{{Company}}</code> - Nome azienda (se presente)</li>
                     </ul>
-                    <div class="mt-2 text-xs text-on-surface-variant">
-                      Formattazione WA: *grassetto*, _corsivo_, ~barrato~
+                    <div class="mt-3 text-[11px] text-on-surface-variant leading-relaxed">
+                      <strong class="text-on-surface">Formattazione testo WhatsApp supportata:</strong><br/>
+                      • <code>*grassetto*</code>, <code>_corsivo_</code>, <code>~barrato~</code><br/>
+                      • <code>```monospaziato```</code>, <code>`codice inline`</code><br/>
+                      • Elenchi: <code>* item</code>, <code>- item</code>, <code>1. item</code><br/>
+                      • Citazioni: <code>&gt; testo</code><br/>
+                      <a href="https://faq.whatsapp.com/539178204879377/?cms_platform=web&locale=it_IT" target="_blank" rel="noopener" class="text-primary hover:underline mt-1 inline-block">Guida Ufficiale WhatsApp</a>
                     </div>
                   </div>
                 </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.preview_label') }}</label>
-                <div class="w-full p-3 bg-black/20 border border-white/5 rounded-lg h-[156px] overflow-y-auto">
+                <div class="w-full p-3 bg-black/20 border border-white/5 rounded-lg h-[240px] overflow-y-auto">
                   <div class="text-sm text-on-surface whitespace-pre-wrap leading-relaxed" v-html="formatWhatsAppText(formData.body)"></div>
                 </div>
               </div>
@@ -101,7 +106,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Plus, Edit2, Trash2 } from 'lucide-vue-next'
+import { Plus, Edit2, Trash2, Info } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useTemplatesStore, type Template } from '~/stores/templates'
 
@@ -123,9 +128,12 @@ function formatWhatsAppText(text: string) {
     .replace(/'/g, '&#039;')
 
   return escaped
+    .replace(/```(.*?)```/gs, '<pre class="font-mono bg-black/20 p-2 rounded my-1">$1</pre>')
+    .replace(/`(.*?)`/g, '<code class="font-mono bg-black/20 px-1 rounded text-[0.9em]">$1</code>')
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
     .replace(/~(.*?)~/g, '<del>$1</del>')
+    .replace(/^&gt; (.*$)/gm, '<blockquote class="border-l-4 border-white/20 pl-3 ml-1 my-1 italic text-on-surface-variant">$1</blockquote>')
 }
 
 function openWizard(tmpl?: Template) {
