@@ -130,9 +130,9 @@ export async function getEngineStatus(token: string): Promise<EngineStatus> {
       }
     } else {
       return {
-        connected: data.Connected ?? false,
-        loggedIn: data.LoggedIn ?? false,
-        phone: data.Jid?.split('@')[0],
+        connected: data.results?.is_connected ?? data.Connected ?? false,
+        loggedIn: data.results?.is_logged_in ?? data.LoggedIn ?? false,
+        phone: data.results?.jid?.split('@')[0] ?? data.Jid?.split('@')[0],
         engine: 'go-whatsapp-web-multidevice',
       }
     }
