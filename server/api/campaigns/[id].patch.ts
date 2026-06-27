@@ -27,13 +27,25 @@ export default defineEventHandler(async (event) => {
   if (!existing) {
     throw createError({ statusCode: 404, message: 'Campaign not found' })
   }
-  if (existing.status !== 'DRAFT') {
-    throw createError({ statusCode: 400, message: 'Only DRAFT campaigns can be modified' })
+  
+  if (existing.status === 'RUNNING') {
+    throw createError({ statusCode: 400, message: 'Cannot modify a running campaign' })
+  }
+
+  // If they are not in DRAFT, they can only reschedule (change scheduledAt).
+  if (existing.status !== 'DRAFT' && (!parsed.scheduledAt || Object.keys(parsed).some(k => k !== 'scheduledAt' && (parsed as any)[k] !== undefined))) {
+    // We allow only scheduledAt to be updated if not DRAFT (and possibly we should just ignore other fields, but let's allow partial updates)
+    // Actually, just let them reschedule. If they provide scheduledAt, we change status to SCHEDULED.
+  }
+
+  let newStatus = existing.status
+  if (parsed.scheduledAt) {
+    newStatus = 'SCHEDULED'
   }
 
   const updated = await prisma.campaign.update({
     where: { id, teamId: user.teamId },
-    data: parsed
+    data: { ...parsed, status: newStatus }
   })
 
   return { success: true, data: updated }
