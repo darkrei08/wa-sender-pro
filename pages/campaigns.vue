@@ -86,7 +86,7 @@
                           class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="Modifica">
                     <Edit2 class="w-4 h-4" />
                   </button>
-                  <button v-if="campaign.status === 'DRAFT' || campaign.status === 'SCHEDULED' || campaign.status === 'COMPLETED' || campaign.status === 'FAILED'" @click="handleDelete(campaign.id)"
+                  <button v-if="campaign.status !== 'RUNNING'" @click="handleDelete(campaign.id)"
                           class="p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error transition-colors" title="Elimina">
                     <Trash2 class="w-4 h-4" />
                   </button>
