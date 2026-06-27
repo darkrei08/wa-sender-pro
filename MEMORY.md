@@ -111,3 +111,16 @@ DATA: 2026-06-26
 3. Risolvere errore porta graphify (controllare config Cockpit Tools)
 4. Sviluppare funzioni mancanti: bulk message scheduling, CSV import migliorato
 
+
+## [Session State Snapshot] - 2026-06-27 10:25:00
+WaForge Project Update - Status: COMPLETE (QR Bugfix + Scheduled Campaigns + CSV Import).
+DATA: 2026-06-27
+
+=== COSA E' STATO FATTO ===
+1. **Fix WuzAPI / GoWA Engine Authentication**: Corretto bug dove il `tokenId` utente veniva passato come password nella Basic Auth di GoWA causando `401 Unauthorized`. Ripristinato `GOWA_TOKEN` come password e usato `tokenId` per l'header `X-Device-Id`. QR Code di nuovo generabile via GoWA (wa-net proxy `getQRCode`).
+2. **Bulk Message Scheduling**: Aggiunto campo `scheduledAt` nel database Prisma. Modificato UI di `campaigns.vue` aggiungendo un quarto step "Programmazione (Opzionale)" che salva la data. Implementato un Nitro plugin scheduler `server/plugins/scheduler.ts` che avvia le campagne `SCHEDULED` quando giunge la data/ora prevista.
+3. **CSV Import Migliorato**: Rimossa la rudimentale `<textarea>` da `contacts.vue` sostituita con un'interfaccia Drag&Drop elegante (DragEvent / File Input) che legge il file CSV nativamente nel browser mantenendo robusto il parsing in `csv-parser.ts`.
+
+=== PROSSIMI STEP ===
+1. Risolvere eventuale errore porta graphify per il semantico (Config Cockpit).
+2. Prossimo rilascio: preparare la merge su main per la versione successiva (v2.2.0).

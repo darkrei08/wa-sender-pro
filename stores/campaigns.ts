@@ -15,6 +15,7 @@ interface Campaign {
   failedCount: number
   delayMin: number
   delayMax: number
+  scheduledAt?: string | null
   startedAt?: string | null
   completedAt?: string | null
   createdAt: string

@@ -25,6 +25,8 @@ export default defineEventHandler(async (event) => {
         : data.contactIds,
       delayMin: data.delayMin,
       delayMax: data.delayMax,
+      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+      status: data.scheduledAt ? 'SCHEDULED' : 'DRAFT',
     },
     include: { template: { select: { name: true } } },
   })

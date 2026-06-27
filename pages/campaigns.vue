@@ -60,6 +60,9 @@
           <span>{{ t('campaigns.sent_count', { count: campaign.sentCount }) }}</span>
           <span>{{ t('campaigns.failed_count', { count: campaign.failedCount }) }}</span>
           <span>{{ t('campaigns.delay_range', { min: campaign.delayMin, max: campaign.delayMax }) }}</span>
+          <span v-if="campaign.scheduledAt" class="flex items-center gap-1 text-primary">
+            <Clock class="w-4 h-4" /> {{ new Date(campaign.scheduledAt).toLocaleString() }}
+          </span>
         </div>
       </div>
     </div>
@@ -72,7 +75,7 @@
 
           <!-- Step indicators -->
           <div class="flex gap-2 mb-6">
-            <div v-for="s in 3" :key="s" class="flex-1 h-1 rounded-full transition-colors"
+            <div v-for="s in 4" :key="s" class="flex-1 h-1 rounded-full transition-colors"
                  :class="wizardStep >= s ? 'bg-primary' : 'bg-white/10'"></div>
           </div>
 
@@ -116,12 +119,20 @@
             <p class="text-xs text-on-surface-variant">{{ t('campaigns.contacts_all') }}</p>
           </div>
 
+          <!-- Step 4: Schedule -->
+          <div v-if="wizardStep === 4" class="space-y-4">
+            <label class="block text-sm font-medium text-on-surface-variant">Programmazione (Opzionale)</label>
+            <p class="text-xs text-on-surface-variant mb-2">Seleziona data e ora se vuoi che la campagna parta in automatico.</p>
+            <input v-model="newCampaign.scheduledAt" type="datetime-local"
+                   class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
+          </div>
+
           <div class="flex justify-between mt-6">
             <button @click="wizardStep > 1 ? wizardStep-- : showWizard = false"
                     class="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
               {{ wizardStep > 1 ? t('campaigns.btn_back') : t('campaigns.btn_cancel') }}
             </button>
-            <button v-if="wizardStep < 3" @click="wizardStep++"
+            <button v-if="wizardStep < 4" @click="wizardStep++"
                     :disabled="wizardStep === 1 && !newCampaign.name || wizardStep === 2 && !newCampaign.templateId"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg transition-all disabled:opacity-30">
               {{ t('campaigns.btn_next') }}
@@ -185,7 +196,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, inject } from 'vue'
-import { Plus, Play, Pause, Eye, X } from 'lucide-vue-next'
+import { Plus, Play, Pause, Eye, X, Clock } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useCampaignsStore } from '~/stores/campaigns'
 
@@ -195,7 +206,7 @@ const store = useCampaignsStore()
 const showWizard = ref(false)
 const wizardStep = ref(1)
 const templates = ref<any[]>([])
-const newCampaign = ref({ name: '', templateId: '', delayMin: 15, delayMax: 45 })
+const newCampaign = ref({ name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' })
 
 const showLogsModal = ref(false)
 const logsLoading = ref(false)
@@ -240,6 +251,7 @@ const selectedTemplatePreview = computed(() => {
 function statusClass(status: string) {
   const map: Record<string, string> = {
     DRAFT: 'bg-white/10 text-on-surface-variant',
+    SCHEDULED: 'bg-blue-500/20 text-blue-400',
     RUNNING: 'bg-primary/20 text-primary animate-glow-pulse',
     PAUSED: 'bg-yellow-500/20 text-yellow-400',
     COMPLETED: 'bg-tertiary/20 text-tertiary',
@@ -249,10 +261,14 @@ function statusClass(status: string) {
 }
 
 async function handleCreate() {
-  await store.createCampaign(newCampaign.value)
+  const payload = { ...newCampaign.value }
+  if (!payload.scheduledAt) delete payload.scheduledAt
+  else payload.scheduledAt = new Date(payload.scheduledAt).toISOString()
+
+  await store.createCampaign(payload)
   showWizard.value = false
   wizardStep.value = 1
-  newCampaign.value = { name: '', templateId: '', delayMin: 15, delayMax: 45 }
+  newCampaign.value = { name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' }
 }
 
 onMounted(async () => {

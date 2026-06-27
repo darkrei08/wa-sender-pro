@@ -94,9 +94,30 @@
       <div v-if="showImport" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showImport = false">
         <div class="w-full max-w-lg bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
           <h3 class="text-lg font-bold text-on-surface mb-4">{{ t('contacts.import_title') }}</h3>
-          <textarea v-model="csvText" rows="8" :placeholder="t('contacts.import_placeholder')"
-                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm font-mono placeholder-on-surface-variant/50 focus:border-primary outline-none"></textarea>
-          <div v-if="importResult" class="mt-3 p-3 rounded-lg bg-primary/10 text-sm text-on-surface">
+          
+          <div 
+            class="relative border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-primary/50 transition-colors"
+            @dragover.prevent
+            @drop.prevent="handleDrop"
+          >
+            <input type="file" accept=".csv,.txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" @change="handleFileChange" />
+            <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+              <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                <Upload class="w-6 h-6 text-on-surface-variant" />
+              </div>
+              <div>
+                <p class="text-sm font-medium text-on-surface">Trascina qui il file CSV</p>
+                <p class="text-xs text-on-surface-variant">oppure clicca per selezionare dal disco</p>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="fileName" class="mt-4 p-3 bg-white/5 rounded-lg border border-white/10 flex items-center justify-between">
+            <span class="text-sm text-on-surface font-mono truncate">{{ fileName }}</span>
+            <button @click="clearFile" class="text-on-surface-variant hover:text-error"><X class="w-4 h-4" /></button>
+          </div>
+
+          <div v-if="importResult" class="mt-4 p-3 rounded-lg bg-primary/10 text-sm text-on-surface border border-primary/20">
             {{ t('contacts.import_result', { imported: importResult.imported, skipped: importResult.skipped, errors: importResult.errors?.length || 0 }) }}
           </div>
           <div class="flex justify-end gap-3 mt-4">
@@ -114,7 +135,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Upload, Trash2, Search, Download } from 'lucide-vue-next'
+import { Upload, Trash2, Search, Download, X } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useContactsStore } from '~/stores/contacts'
 
@@ -123,6 +144,7 @@ const store = useContactsStore()
 
 const showImport = ref(false)
 const csvText = ref('')
+const fileName = ref('')
 const importResult = ref<any>(null)
 
 let debounceTimer: ReturnType<typeof setTimeout>
@@ -131,9 +153,35 @@ function debouncedSearch() {
   debounceTimer = setTimeout(() => store.fetchContacts(1), 400)
 }
 
+function handleFileChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (file) readFile(file)
+}
+
+function handleDrop(event: DragEvent) {
+  const file = event.dataTransfer?.files?.[0]
+  if (file) readFile(file)
+}
+
+function readFile(file: File) {
+  fileName.value = file.name
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    csvText.value = e.target?.result as string
+  }
+  reader.readAsText(file)
+}
+
+function clearFile() {
+  fileName.value = ''
+  csvText.value = ''
+  importResult.value = null
+}
+
 async function handleImport() {
   if (!csvText.value.trim()) return
   importResult.value = await store.importCSV(csvText.value)
+  // Non chiudiamo il modal subito per mostrare il risultato
 }
 
 async function handleBulkDelete() {
