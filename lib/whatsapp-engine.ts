@@ -212,7 +212,11 @@ export async function sendMessage(
 }
 
 export async function disconnectEngine(token: string): Promise<void> {
-  await apiCall(cfg.logout, token, 'POST')
+  if (ENGINE === 'gowa') {
+    await apiCall(`/devices/${token}`, token, 'DELETE')
+  } else {
+    await apiCall(cfg.logout, token, 'POST')
+  }
 }
 
 /** Render template: replace {{Variable}} with contact field values */

@@ -193,5 +193,7 @@ model WhatsAppSession {
   token     String   @unique // WuzAPI user token specific to this team
   status    String   @default("disconnected") // connected|disconnected|connecting
   phone     String?  // connected phone number
+  name      String?  // custom device name
+  tags      String?  // JSON or comma separated tags
   updatedAt DateTime @updatedAt
 }

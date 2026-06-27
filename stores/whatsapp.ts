@@ -8,6 +8,9 @@ export interface WASession {
   id: string
   status: string
   phone: string | null
+  name?: string | null
+  tags?: string | null
+  teamName?: string
   engine: string
   connected: boolean
   loggedIn: boolean
@@ -43,5 +46,13 @@ export const useWhatsappStore = defineStore('whatsapp', () => {
     await fetchSessions()
   }
 
-  return { sessions, connected, loading, engine, phone, fetchSessions, fetchStatus, disconnect }
+  async function updateSession(id: string, payload: { name?: string, tags?: string }) {
+    await $fetch(`/api/whatsapp/${id}`, {
+      method: 'PATCH',
+      body: payload
+    })
+    await fetchSessions()
+  }
+
+  return { sessions, connected, loading, engine, phone, fetchSessions, fetchStatus, disconnect, updateSession }
 })

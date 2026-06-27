@@ -23,7 +23,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Forbidden' })
   }
 
-  await disconnectEngine(token)
+  try {
+    await disconnectEngine(token)
+  } catch (err) {
+    // Ignore engine errors (e.g. 404 device not found) so we can still clean up our DB
+    console.warn(`[Disconnect] Engine error for token ${token}:`, err)
+  }
   
   // Remove session from DB or mark disconnected
   await prisma.whatsAppSession.delete({
