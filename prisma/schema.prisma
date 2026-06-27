@@ -31,6 +31,8 @@ model User {
 model Team {
   id            String    @id @default(cuid())
   name          String
+  description   String?
+  tags          String?
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -193,7 +195,8 @@ model WhatsAppSession {
   token     String   @unique // WuzAPI user token specific to this team
   status    String   @default("disconnected") // connected|disconnected|connecting
   phone     String?  // connected phone number
-  name      String?  // custom device name
+  name        String?  // custom device name
+  description String?  // custom device description
   tags      String?  // JSON or comma separated tags
   updatedAt DateTime @updatedAt
 }

@@ -105,6 +105,11 @@
             <label class="block text-sm font-medium text-on-surface-variant mb-1">Nome Dispositivo</label>
             <input v-model="editForm.name" type="text" placeholder="es. iPhone Aziendale" class="w-full px-4 py-2.5 bg-surface-container border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" />
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">Descrizione (opzionale)</label>
+            <input v-model="editForm.description" type="text" placeholder="es. Telefono del supporto clienti" class="w-full px-4 py-2.5 bg-surface-container border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" />
+          </div>
           
           <div>
             <label class="block text-sm font-medium text-on-surface-variant mb-1">Tags (separati da virgola)</label>
@@ -142,13 +147,14 @@ const addToast = inject('addToast') as Function
 
 const editModalOpen = ref(false)
 const saving = ref(false)
-const editForm = ref({ id: '', name: '', tags: '' })
+const editForm = ref({ id: '', name: '', tags: '', description: '' })
 
 const openEditModal = (session: any) => {
   editForm.value = {
     id: session.id,
     name: session.name || '',
-    tags: session.tags || ''
+    tags: session.tags || '',
+    description: session.description || ''
   }
   editModalOpen.value = true
 }
@@ -158,7 +164,8 @@ const saveDevice = async () => {
   try {
     await waStore.updateSession(editForm.value.id, {
       name: editForm.value.name,
-      tags: editForm.value.tags
+      tags: editForm.value.tags,
+      description: editForm.value.description
     })
     addToast('Dispositivo aggiornato', 'success')
     editModalOpen.value = false

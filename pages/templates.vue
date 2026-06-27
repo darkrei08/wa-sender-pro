@@ -61,7 +61,21 @@
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.body_label') }}</label>
                 <textarea v-model="formData.body" rows="6" :placeholder="t('templates.body_placeholder')"
                           class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none whitespace-pre-wrap"></textarea>
-                <p class="text-xs text-on-surface-variant mt-1">{{ t('templates.body_variables') }}</p>
+                <div class="mt-2 p-3 bg-white/5 border border-white/10 rounded-lg flex items-start gap-2">
+                  <Info class="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span class="block font-medium text-sm text-on-surface mb-1">Legenda Variabili / Formattazione</span>
+                    <ul class="space-y-1 text-xs text-on-surface-variant" v-pre>
+                      <li><code>{{Name}}</code> - Nome del contatto</li>
+                      <li><code>{{Phone}}</code> - Numero di telefono</li>
+                      <li><code>{{Email}}</code> - Indirizzo Email</li>
+                      <li><code>{{Company}}</code> - Nome azienda (se presente)</li>
+                    </ul>
+                    <div class="mt-2 text-xs text-on-surface-variant">
+                      Formattazione WA: *grassetto*, _corsivo_, ~barrato~
+                    </div>
+                  </div>
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('templates.preview_label') }}</label>

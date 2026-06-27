@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
       return {
         id: session.id,
         name: session.name,
+        description: session.description,
         tags: session.tags,
         teamName: session.team?.name,
         status: newStatus,

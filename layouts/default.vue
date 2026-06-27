@@ -42,13 +42,6 @@
             <LayoutDashboard class="w-5 h-5" />
             <span class="font-medium text-sm">{{ t('nav.home') }}</span>
           </NuxtLink>
-          <NuxtLink :to="localePath('/connect')" class="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors" active-class="bg-primary/10 text-primary border-l-2 border-primary">
-            <div class="flex items-center gap-3">
-              <QrCode class="w-5 h-5" />
-              <span class="font-medium text-sm">{{ t('nav.connect') }}</span>
-            </div>
-            <div class="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" :class="waStore.connected ? 'bg-primary shadow-primary/50' : 'bg-red-500 shadow-red-500/50'"></div>
-          </NuxtLink>
           <NuxtLink :to="waStore.connected ? localePath('/contacts') : ''" class="flex items-center justify-between p-3 rounded-lg transition-colors" :class="waStore.connected ? 'hover:bg-white/5' : 'opacity-50 cursor-not-allowed'" :active-class="waStore.connected ? 'bg-primary/10 text-primary border-l-2 border-primary' : ''">
             <div class="flex items-center gap-3">
               <Users class="w-5 h-5" />

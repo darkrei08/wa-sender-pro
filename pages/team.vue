@@ -14,14 +14,26 @@
     <!-- Team Details Form -->
     <div class="bg-surface-container/50 backdrop-blur-md border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-xl mb-8">
       <h3 class="text-lg font-bold text-on-surface mb-4">Informazioni Team</h3>
-      <form @submit.prevent="updateTeam" class="flex gap-4 items-end">
-        <div class="flex-1 max-w-md">
-          <label class="block text-sm font-medium text-on-surface-variant mb-1">Nome del Team</label>
-          <input v-model="teamName" type="text" required class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
+      <form @submit.prevent="updateTeam" class="flex flex-col gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">Nome del Team</label>
+            <input v-model="teamForm.name" type="text" required class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">Tags (separati da virgola)</label>
+            <input v-model="teamForm.tags" type="text" placeholder="es. marketing, vendite" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">Descrizione</label>
+            <textarea v-model="teamForm.description" rows="2" placeholder="Descrizione del team..." class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface resize-none"></textarea>
+          </div>
         </div>
-        <button type="submit" :disabled="updatingTeam" class="px-5 py-2.5 bg-surface-variant hover:bg-white/5 text-on-surface font-semibold rounded-lg transition-colors disabled:opacity-50">
-          {{ updatingTeam ? 'Salvataggio...' : 'Salva' }}
-        </button>
+        <div class="flex justify-end mt-2">
+          <button type="submit" :disabled="updatingTeam" class="px-5 py-2.5 bg-surface-variant hover:bg-white/5 text-on-surface font-semibold rounded-lg transition-colors disabled:opacity-50 min-w-[120px]">
+            {{ updatingTeam ? 'Salvataggio...' : 'Salva' }}
+          </button>
+        </div>
       </form>
     </div>
 
@@ -124,7 +136,7 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const addToast = inject('addToast') as Function
 
-const teamName = ref('')
+const teamForm = ref({ name: '', description: '', tags: '' })
 const updatingTeam = ref(false)
 
 const members = ref<any[]>([])
@@ -139,7 +151,9 @@ const inviteForm = ref({ email: '', role: 'AGENT' })
 const fetchTeam = async () => {
   try {
     const res = await $fetch<{ team: any }>('/api/team')
-    teamName.value = res.team?.name || ''
+    teamForm.value.name = res.team?.name || ''
+    teamForm.value.description = res.team?.description || ''
+    teamForm.value.tags = res.team?.tags || ''
   } catch (e: any) {
     console.error('Error fetching team', e)
   }
@@ -150,7 +164,7 @@ const updateTeam = async () => {
   try {
     const res = await $fetch('/api/team', {
       method: 'PATCH',
-      body: { name: teamName.value }
+      body: teamForm.value
     })
     addToast('Team aggiornato', 'success')
   } catch (e: any) {

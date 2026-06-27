@@ -8,15 +8,15 @@ export default defineEventHandler(async (event) => {
   if (!authUser) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
   const body = await readBody(event)
-  const token = body?.tokenId
+  const sessionId = body?.sessionId || body?.tokenId // fallback for old frontends
 
-  if (!token) {
-    throw createError({ statusCode: 400, message: 'tokenId is required' })
+  if (!sessionId) {
+    throw createError({ statusCode: 400, message: 'sessionId is required' })
   }
 
-  // Verify token belongs to team
+  // Verify session belongs to team
   const session = await prisma.whatsAppSession.findFirst({
-    where: { token, teamId: authUser.teamId }
+    where: { id: sessionId, teamId: authUser.teamId }
   })
 
   if (!session) {
@@ -24,10 +24,10 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    await disconnectEngine(token)
+    await disconnectEngine(session.token)
   } catch (err) {
     // Ignore engine errors (e.g. 404 device not found) so we can still clean up our DB
-    console.warn(`[Disconnect] Engine error for token ${token}:`, err)
+    console.warn(`[Disconnect] Engine error for token ${session.token}:`, err)
   }
   
   // Remove session from DB or mark disconnected

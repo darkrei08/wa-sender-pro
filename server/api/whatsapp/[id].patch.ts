@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: 'Device ID is required' })
 
   const body = await readBody(event)
-  const { name, tags } = body
+  const { name, tags, description } = body
 
   // Check if session belongs to the user's team
   const session = await prisma.whatsAppSession.findFirst({
@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
     data: {
       name: name !== undefined ? name : session.name,
       tags: tags !== undefined ? tags : session.tags,
+      description: description !== undefined ? description : session.description,
     }
   })
 
