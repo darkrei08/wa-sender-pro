@@ -158,3 +158,9 @@ After fixing the QR code generation, the user reported that scanning the code wo
 - **Invites via SMTP**: Refactored `server/api/auth/invite.post.ts` to generate a JWT invite link and send it via email using `nodemailer`. The link is valid for 48 hours. If SMTP is unconfigured, the token is shown on screen for testing.
 - **SSO/OAuth (PocketID)**: Implemented basic OAuth2 flows in `server/api/auth/oauth/login.get.ts` and `callback.get.ts` to support external OIDC providers. Added a "Accedi con SSO" button in `pages/login.vue`.
 - **Registration Update**: Updated `pages/register.vue` and `server/api/auth/register.post.ts` to accept `inviteToken`. If a token is provided, the user skips team creation and is automatically enrolled into the target Team.
+
+## 2026-06-27 16:03 - Formattazione WhatsApp
+- Aggiornata la legenda e la formattazione nella pagina dei template (`pages/templates.vue`) per supportare nativamente le specifiche complete di WhatsApp (grassetto, corsivo, barrato, monospaziato, codice inline, elenchi, e citazioni).
+- Corretto il parsing della risposta API di WuzAPI per risolvere l'errore "Body is unusable" che nascondeva i reali errori di invio.
+- Aggiunta la sanificazione automatica e l'inserimento del prefisso internazionale per i numeri italiani (39).
+- Rilasciata la patch v2.3.2.
