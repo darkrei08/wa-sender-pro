@@ -152,3 +152,9 @@ After fixing the QR code generation, the user reported that scanning the code wo
 - **Disconnection Fix**: Updated `lib/whatsapp-engine.ts` to use `DELETE /devices/{id}` for GoWA instead of `POST /app/logout`. Added try-catch in `server/api/whatsapp/disconnect.post.ts` to ignore engine 404s and proceed with local DB cleanup, fixing the "Errore durante la disconnessione" block.
 - **Device Personalization**: Added `name` and `tags` to `WhatsAppSession` in `prisma/schema.prisma`. Implemented `server/api/whatsapp/[id].patch.ts` to save names and tags. Updated `pages/devices.vue` to display a pencil icon opening a modal to edit name and tags, and correctly show the Team name.
 - **Environment**: Created `.env` from `.env.example` and added SMTP/OAuth configurations to `docker-compose.yml`.
+
+### [2026-06-27] Task B: Team Personalization & Invites (SMTP/OAuth)
+- **Team Settings**: Modified `pages/team.vue` to allow viewing and editing the Team name. Added `server/api/team/index.get.ts` and `index.patch.ts`.
+- **Invites via SMTP**: Refactored `server/api/auth/invite.post.ts` to generate a JWT invite link and send it via email using `nodemailer`. The link is valid for 48 hours. If SMTP is unconfigured, the token is shown on screen for testing.
+- **SSO/OAuth (PocketID)**: Implemented basic OAuth2 flows in `server/api/auth/oauth/login.get.ts` and `callback.get.ts` to support external OIDC providers. Added a "Accedi con SSO" button in `pages/login.vue`.
+- **Registration Update**: Updated `pages/register.vue` and `server/api/auth/register.post.ts` to accept `inviteToken`. If a token is provided, the user skips team creation and is automatically enrolled into the target Team.
