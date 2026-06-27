@@ -87,5 +87,16 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     activeProgress.value = null
   }
 
-  return { campaigns, loading, activeProgress, activeCampaign, fetchCampaigns, createCampaign, startCampaign, pauseCampaign, startPolling, stopPolling }
+  async function updateCampaign(id: string, data: Record<string, unknown>) {
+    const res = await $fetch<{ data: Campaign }>(`/api/campaigns/${id}`, { method: 'PATCH', body: data })
+    await fetchCampaigns()
+    return res.data
+  }
+
+  async function deleteCampaign(id: string) {
+    await $fetch(`/api/campaigns/${id}`, { method: 'DELETE' })
+    await fetchCampaigns()
+  }
+
+  return { campaigns, loading, activeProgress, activeCampaign, fetchCampaigns, createCampaign, updateCampaign, deleteCampaign, startCampaign, pauseCampaign, startPolling, stopPolling }
 })

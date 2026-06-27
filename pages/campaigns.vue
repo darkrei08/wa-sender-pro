@@ -24,54 +24,89 @@
       </div>
     </div>
 
-    <!-- Campaigns List -->
-    <div class="grid gap-4">
-      <div v-if="store.loading" v-for="i in 3" :key="i" class="bg-surface-container/40 border border-white/10 rounded-2xl p-6">
-        <div class="h-5 bg-white/5 rounded w-1/3 animate-pulse mb-3"></div>
-        <div class="h-4 bg-white/5 rounded w-1/4 animate-pulse"></div>
-      </div>
-
-      <div v-else v-for="campaign in store.campaigns" :key="campaign.id"
-           class="bg-surface-container/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="font-semibold text-on-surface text-lg">{{ campaign.name }}</h3>
-            <p class="text-sm text-on-surface-variant mt-1">Template: {{ campaign.template?.name || '—' }}</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="px-3 py-1 text-xs font-bold rounded-full" :class="statusClass(campaign.status)">
-              {{ campaign.status }}
-            </span>
-            <button @click="openLogs(campaign.id)"
-                    class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="View Logs">
-              <Eye class="w-4 h-4" />
-            </button>
-            <button v-if="campaign.status === 'DRAFT'" @click="store.startCampaign(campaign.id)"
-                    class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
-              <Play class="w-4 h-4" />
-            </button>
-            <button v-if="campaign.status === 'RUNNING'" @click="store.pauseCampaign(campaign.id)"
-                    class="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition-colors">
-              <Pause class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div class="flex gap-6 mt-4 text-sm text-on-surface-variant">
-          <span>{{ t('campaigns.sent_count', { count: campaign.sentCount }) }}</span>
-          <span>{{ t('campaigns.failed_count', { count: campaign.failedCount }) }}</span>
-          <span>{{ t('campaigns.delay_range', { min: campaign.delayMin, max: campaign.delayMax }) }}</span>
-          <span v-if="campaign.scheduledAt" class="flex items-center gap-1 text-primary">
-            <Clock class="w-4 h-4" /> {{ new Date(campaign.scheduledAt).toLocaleString() }}
-          </span>
-        </div>
+    <!-- Campaigns Table -->
+    <div class="bg-surface-container-high border border-white/10 rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="text-on-surface-variant border-b border-white/10 bg-black/20">
+            <tr>
+              <th class="py-4 px-6 font-medium">#</th>
+              <th class="py-4 px-6 font-medium">{{ t('campaigns.name_label') }}</th>
+              <th class="py-4 px-6 font-medium">Template</th>
+              <th class="py-4 px-6 font-medium">Stato</th>
+              <th class="py-4 px-6 font-medium">Progresso</th>
+              <th class="py-4 px-6 font-medium">Schedulazione</th>
+              <th class="py-4 px-6 font-medium text-right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            <tr v-if="store.loading" v-for="i in 3" :key="i" class="animate-pulse">
+              <td colspan="7" class="py-6 px-6">
+                <div class="h-4 bg-white/5 rounded w-full"></div>
+              </td>
+            </tr>
+            <tr v-else-if="store.campaigns.length === 0">
+              <td colspan="7" class="py-8 text-center text-on-surface-variant">Nessuna campagna trovata.</td>
+            </tr>
+            <tr v-else v-for="(campaign, idx) in store.campaigns" :key="campaign.id" class="hover:bg-white/5 transition-colors">
+              <td class="py-4 px-6 text-on-surface-variant">{{ idx + 1 }}</td>
+              <td class="py-4 px-6 font-semibold text-on-surface">{{ campaign.name }}</td>
+              <td class="py-4 px-6 text-on-surface-variant">{{ campaign.template?.name || '—' }}</td>
+              <td class="py-4 px-6">
+                <span class="px-3 py-1 text-xs font-bold rounded-full" :class="statusClass(campaign.status)">
+                  {{ campaign.status }}
+                </span>
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-24 bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-full bg-primary rounded-full transition-all"
+                         :style="{ width: campaign.totalCount > 0 ? ((campaign.sentCount + campaign.failedCount) / campaign.totalCount * 100) + '%' : '0%' }"></div>
+                  </div>
+                  <span class="text-xs text-on-surface-variant">{{ campaign.sentCount + campaign.failedCount }} / {{ campaign.totalCount }}</span>
+                </div>
+              </td>
+              <td class="py-4 px-6 text-on-surface-variant text-xs">
+                <span v-if="campaign.scheduledAt" class="flex items-center gap-1 text-primary">
+                  <Clock class="w-3 h-3" /> {{ new Date(campaign.scheduledAt).toLocaleString() }}
+                </span>
+                <span v-else>—</span>
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-center justify-end gap-2">
+                  <button @click="openLogs(campaign.id)"
+                          class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="Visualizza Log">
+                    <Eye class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'DRAFT' || campaign.status === 'SCHEDULED'" @click="openWizard(campaign)"
+                          class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="Modifica">
+                    <Edit2 class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'DRAFT' || campaign.status === 'SCHEDULED' || campaign.status === 'COMPLETED' || campaign.status === 'FAILED'" @click="handleDelete(campaign.id)"
+                          class="p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error transition-colors" title="Elimina">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'DRAFT' || campaign.status === 'PAUSED'" @click="store.startCampaign(campaign.id)"
+                          class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors" title="Avvia">
+                    <Play class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'RUNNING'" @click="store.pauseCampaign(campaign.id)"
+                          class="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition-colors" title="Pausa">
+                    <Pause class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Create Campaign Wizard -->
+    <!-- Create/Edit Campaign Wizard -->
     <Teleport to="body">
       <div v-if="showWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showWizard = false">
         <div class="w-full max-w-xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
-          <h3 class="text-lg font-bold text-on-surface mb-6">{{ t('campaigns.create_title') }}</h3>
+          <h3 class="text-lg font-bold text-on-surface mb-6">{{ isEditing ? 'Modifica Campagna' : t('campaigns.create_title') }}</h3>
 
           <!-- Step indicators -->
           <div class="flex gap-2 mb-6">
@@ -82,14 +117,14 @@
           <!-- Step 1: Name -->
           <div v-if="wizardStep === 1" class="space-y-4">
             <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.name_label') }}</label>
-            <input v-model="newCampaign.name" type="text" :placeholder="t('campaigns.name_placeholder')"
+            <input v-model="formData.name" type="text" :placeholder="t('campaigns.name_placeholder')"
                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
           </div>
 
           <!-- Step 2: Template -->
           <div v-if="wizardStep === 2" class="space-y-4">
             <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.template_label') }}</label>
-            <select v-model="newCampaign.templateId"
+            <select v-model="formData.templateId"
                     class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none">
               <option value="" disabled>{{ t('campaigns.template_select') }}</option>
               <option v-for="tmpl in templates" :key="tmpl.id" :value="tmpl.id">{{ tmpl.name }}</option>
@@ -107,12 +142,12 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_min') }}</label>
-                <input v-model.number="newCampaign.delayMin" type="number" min="5" max="300"
+                <input v-model.number="formData.delayMin" type="number" min="5" max="300"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
               <div>
                 <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_max') }}</label>
-                <input v-model.number="newCampaign.delayMax" type="number" min="10" max="600"
+                <input v-model.number="formData.delayMax" type="number" min="10" max="600"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
             </div>
@@ -123,7 +158,7 @@
           <div v-if="wizardStep === 4" class="space-y-4">
             <label class="block text-sm font-medium text-on-surface-variant">Programmazione (Opzionale)</label>
             <p class="text-xs text-on-surface-variant mb-2">Seleziona data e ora se vuoi che la campagna parta in automatico.</p>
-            <input v-model="newCampaign.scheduledAt" type="datetime-local"
+            <input v-model="formData.scheduledAt" type="datetime-local"
                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
           </div>
 
@@ -133,13 +168,13 @@
               {{ wizardStep > 1 ? t('campaigns.btn_back') : t('campaigns.btn_cancel') }}
             </button>
             <button v-if="wizardStep < 4" @click="wizardStep++"
-                    :disabled="wizardStep === 1 && !newCampaign.name || wizardStep === 2 && !newCampaign.templateId"
+                    :disabled="wizardStep === 1 && !formData.name || wizardStep === 2 && !formData.templateId"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg transition-all disabled:opacity-30">
               {{ t('campaigns.btn_next') }}
             </button>
-            <button v-else @click="handleCreate"
+            <button v-else @click="handleSave"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] transition-all">
-              {{ t('campaigns.btn_create') }}
+              {{ isEditing ? 'Salva' : t('campaigns.btn_create') }}
             </button>
           </div>
         </div>
@@ -196,7 +231,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, inject } from 'vue'
-import { Plus, Play, Pause, Eye, X, Clock } from 'lucide-vue-next'
+import { Plus, Play, Pause, Eye, X, Clock, Edit2, Trash2 } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useCampaignsStore } from '~/stores/campaigns'
 
@@ -204,9 +239,12 @@ const { t } = useI18n()
 const store = useCampaignsStore()
 
 const showWizard = ref(false)
+const isEditing = ref(false)
 const wizardStep = ref(1)
 const templates = ref<any[]>([])
-const newCampaign = ref({ name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' })
+
+const initialForm = { id: '', name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' }
+const formData = ref({ ...initialForm })
 
 const showLogsModal = ref(false)
 const logsLoading = ref(false)
@@ -227,6 +265,36 @@ async function openLogs(campaignId: string) {
   }
 }
 
+function openWizard(campaign?: any) {
+  wizardStep.value = 1
+  if (campaign) {
+    isEditing.value = true
+    formData.value = {
+      id: campaign.id,
+      name: campaign.name,
+      templateId: campaign.templateId,
+      delayMin: campaign.delayMin,
+      delayMax: campaign.delayMax,
+      scheduledAt: campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : ''
+    }
+  } else {
+    isEditing.value = false
+    formData.value = { ...initialForm }
+  }
+  showWizard.value = true
+}
+
+async function handleDelete(id: string) {
+  if (confirm('Sei sicuro di voler eliminare questa campagna? Verranno eliminati anche tutti i log associati.')) {
+    try {
+      await store.deleteCampaign(id)
+      addToast('Campagna eliminata', 'success')
+    } catch (e: any) {
+      addToast(e.data?.message || 'Errore durante l\'eliminazione', 'error')
+    }
+  }
+}
+
 function formatWhatsAppText(text: string) {
   if (!text) return ''
   
@@ -244,7 +312,7 @@ function formatWhatsAppText(text: string) {
 }
 
 const selectedTemplatePreview = computed(() => {
-  const tmpl = templates.value.find(t => t.id === newCampaign.value.templateId)
+  const tmpl = templates.value.find(t => t.id === formData.value.templateId)
   return tmpl ? formatWhatsAppText(tmpl.body) : ''
 })
 
@@ -260,15 +328,27 @@ function statusClass(status: string) {
   return map[status] || map.DRAFT
 }
 
-async function handleCreate() {
-  const payload = { ...newCampaign.value }
+async function handleSave() {
+  const payload: any = { ...formData.value }
+  delete payload.id
+  
   if (!payload.scheduledAt) delete payload.scheduledAt
   else payload.scheduledAt = new Date(payload.scheduledAt).toISOString()
 
-  await store.createCampaign(payload)
-  showWizard.value = false
-  wizardStep.value = 1
-  newCampaign.value = { name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' }
+  try {
+    if (isEditing.value) {
+      await store.updateCampaign(formData.value.id, payload)
+      addToast('Campagna aggiornata', 'success')
+    } else {
+      await store.createCampaign(payload)
+      addToast('Campagna creata', 'success')
+    }
+    showWizard.value = false
+    wizardStep.value = 1
+    formData.value = { ...initialForm }
+  } catch (e: any) {
+    addToast(e.data?.message || 'Errore durante il salvataggio', 'error')
+  }
 }
 
 onMounted(async () => {
