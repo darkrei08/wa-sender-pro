@@ -173,3 +173,11 @@ After fixing the QR code generation, the user reported that scanning the code wo
 - **Gestione Teams**: Verificato l'esistente `pages/team.vue` che implementa già i requisiti dell'utente (modifica, inviti, permessi).
 - **Controllo Codice**: Compilazione con successo (`npm run build` / `typecheck`) per prevenire bug, eseguendo sviluppo con strict pattern.
 - **Release**: Versioni incrementate a `v2.2.7` e `v2.2.8` e rilasciate sul branch di produzione.
+
+## [2026-06-27 17:03:00] GOWA Integration
+- Aggiunti modelli WhatsAppConversation e WhatsAppScheduledMessage a schema.prisma.
+- Creato GowaClient (lib/gowa-client.ts) per interazione Cloud API.
+- Sviluppata policy di opt-in/opt-out (lib/whatsapp-policy.ts).
+- Creazione Webhook GOWA sicuro con HMAC (server/api/webhook/gowa.ts).
+- Aggiornamento stores/chat.ts per UI e stati in real-time.
+- Cron worker Nitro implementato (server/tasks/whatsapp-scheduled.ts).
