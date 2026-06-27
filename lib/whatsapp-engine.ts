@@ -83,10 +83,10 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
       }
     }
 
+    const txt = await res.text()
     try {
-      data = await res.json()
+      data = JSON.parse(txt)
     } catch {
-      const txt = await res.text()
       throw new Error(`[${ENGINE}] ${res.status}: ${txt}`)
     }
     
@@ -95,7 +95,12 @@ async function apiCall(path: string, token: string, method = 'GET', body?: unkno
       throw new Error(`[${ENGINE}] ${res.status}: ${JSON.stringify(data)}`)
     }
   } else {
-    data = await res.json()
+    const txt = await res.text()
+    try {
+      data = JSON.parse(txt)
+    } catch {
+      data = txt // some endpoints might just return OK or plain text
+    }
   }
 
   // Auto-provision gowa device for fresh setups
@@ -189,16 +194,24 @@ export async function sendMessage(
 ): Promise<SendResult> {
   try {
     let body: Record<string, unknown>
+    
+    // Clean phone number: remove +, spaces, dashes
+    let cleanPhone = phone.replace(/[\+\s\-]/g, '')
+    if (cleanPhone.startsWith('00')) cleanPhone = cleanPhone.substring(2)
+    // Se inizia con 3 ed è lungo 10 cifre, probabile numero italiano senza prefisso (assunzione per comodità)
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('3')) {
+      cleanPhone = `39${cleanPhone}`
+    }
 
     if (ENGINE === 'wuzapi') {
       body = {
-        Phone: `${phone}@s.whatsapp.net`,
+        Phone: `${cleanPhone}@s.whatsapp.net`,
         Body: message,
       }
     } else {
       // gowa format
       body = {
-        Phone: `${phone}@s.whatsapp.net`,
+        Phone: `${cleanPhone}@s.whatsapp.net`,
         Message: message,
       }
     }
