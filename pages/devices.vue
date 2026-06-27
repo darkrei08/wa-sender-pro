@@ -83,10 +83,16 @@
           </div>
         </div>
 
-        <button @click="disconnectSession(session.id)" class="w-full py-2.5 border border-error/30 text-error hover:bg-error/10 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-          <LogOut class="w-4 h-4" />
-          Disconnetti
-        </button>
+        <div class="flex flex-col gap-2">
+          <button v-if="session.connected && session.phone" @click="sendTestMessage(session.id)" class="w-full py-2.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-xl font-medium transition-colors flex items-center justify-center gap-2" title="Invia un messaggio di test a questo numero">
+            <Send class="w-4 h-4" />
+            Test Messaggio
+          </button>
+          <button @click="disconnectSession(session.id)" class="w-full py-2.5 border border-error/30 text-error hover:bg-error/10 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+            <LogOut class="w-4 h-4" />
+            Disconnetti
+          </button>
+        </div>
       </div>
     </div>
 
@@ -135,7 +141,7 @@
 <script setup lang="ts">
 import { ref, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import { Smartphone, LogOut, Loader2, QrCode, AlertCircle, Pencil, X } from 'lucide-vue-next'
+import { Smartphone, LogOut, Loader2, QrCode, AlertCircle, Pencil, X, Send } from 'lucide-vue-next'
 import { useI18n, useLocalePath } from '#i18n'
 import { useWhatsappStore } from '~/stores/whatsapp'
 
@@ -183,6 +189,19 @@ const disconnectSession = async (tokenId: string) => {
     addToast('Dispositivo disconnesso', 'success')
   } catch (e) {
     addToast('Errore durante la disconnessione', 'error')
+  }
+}
+
+const sendTestMessage = async (sessionId: string) => {
+  try {
+    addToast('Invio test in corso...', 'info')
+    await $fetch('/api/whatsapp/test', {
+      method: 'POST',
+      body: { sessionId }
+    })
+    addToast('Messaggio di test inviato!', 'success')
+  } catch (e: any) {
+    addToast(e.data?.statusMessage || 'Errore durante l\'invio del test', 'error')
   }
 }
 
