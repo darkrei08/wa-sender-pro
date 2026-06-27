@@ -24,54 +24,93 @@
       </div>
     </div>
 
-    <!-- Campaigns List -->
-    <div class="grid gap-4">
-      <div v-if="store.loading" v-for="i in 3" :key="i" class="bg-surface-container/40 border border-white/10 rounded-2xl p-6">
-        <div class="h-5 bg-white/5 rounded w-1/3 animate-pulse mb-3"></div>
-        <div class="h-4 bg-white/5 rounded w-1/4 animate-pulse"></div>
-      </div>
-
-      <div v-else v-for="campaign in store.campaigns" :key="campaign.id"
-           class="bg-surface-container/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="font-semibold text-on-surface text-lg">{{ campaign.name }}</h3>
-            <p class="text-sm text-on-surface-variant mt-1">Template: {{ campaign.template?.name || '—' }}</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="px-3 py-1 text-xs font-bold rounded-full" :class="statusClass(campaign.status)">
-              {{ campaign.status }}
-            </span>
-            <button @click="openLogs(campaign.id)"
-                    class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="View Logs">
-              <Eye class="w-4 h-4" />
-            </button>
-            <button v-if="campaign.status === 'DRAFT'" @click="store.startCampaign(campaign.id)"
-                    class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
-              <Play class="w-4 h-4" />
-            </button>
-            <button v-if="campaign.status === 'RUNNING'" @click="store.pauseCampaign(campaign.id)"
-                    class="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition-colors">
-              <Pause class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div class="flex gap-6 mt-4 text-sm text-on-surface-variant">
-          <span>{{ t('campaigns.sent_count', { count: campaign.sentCount }) }}</span>
-          <span>{{ t('campaigns.failed_count', { count: campaign.failedCount }) }}</span>
-          <span>{{ t('campaigns.delay_range', { min: campaign.delayMin, max: campaign.delayMax }) }}</span>
-          <span v-if="campaign.scheduledAt" class="flex items-center gap-1 text-primary">
-            <Clock class="w-4 h-4" /> {{ new Date(campaign.scheduledAt).toLocaleString() }}
-          </span>
-        </div>
+    <!-- Campaigns Table -->
+    <div class="bg-surface-container-high border border-white/10 rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="text-on-surface-variant border-b border-white/10 bg-black/20">
+            <tr>
+              <th class="py-4 px-6 font-medium">#</th>
+              <th class="py-4 px-6 font-medium">{{ t('campaigns.name_label') }}</th>
+              <th class="py-4 px-6 font-medium">Template</th>
+              <th class="py-4 px-6 font-medium">Stato</th>
+              <th class="py-4 px-6 font-medium">Progresso</th>
+              <th class="py-4 px-6 font-medium">Schedulazione</th>
+              <th class="py-4 px-6 font-medium text-right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            <tr v-if="store.loading" v-for="i in 3" :key="i" class="animate-pulse">
+              <td colspan="7" class="py-6 px-6">
+                <div class="h-4 bg-white/5 rounded w-full"></div>
+              </td>
+            </tr>
+            <tr v-else-if="store.campaigns.length === 0">
+              <td colspan="7" class="py-8 text-center text-on-surface-variant">Nessuna campagna trovata.</td>
+            </tr>
+            <tr v-else v-for="(campaign, idx) in store.campaigns" :key="campaign.id" class="hover:bg-white/5 transition-colors">
+              <td class="py-4 px-6 text-on-surface-variant">{{ idx + 1 }}</td>
+              <td class="py-4 px-6 font-semibold text-on-surface">{{ campaign.name }}</td>
+              <td class="py-4 px-6 text-on-surface-variant">{{ campaign.template?.name || '—' }}</td>
+              <td class="py-4 px-6">
+                <span class="px-3 py-1 text-xs font-bold rounded-full" :class="statusClass(campaign.status)">
+                  {{ campaign.status }}
+                </span>
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-24 bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-full bg-primary rounded-full transition-all"
+                         :style="{ width: campaign.totalCount > 0 ? ((campaign.sentCount + campaign.failedCount) / campaign.totalCount * 100) + '%' : '0%' }"></div>
+                  </div>
+                  <span class="text-xs text-on-surface-variant">{{ campaign.sentCount + campaign.failedCount }} / {{ campaign.totalCount }}</span>
+                </div>
+              </td>
+              <td class="py-4 px-6 text-on-surface-variant text-xs">
+                <span v-if="campaign.scheduledAt" class="flex items-center gap-1 text-primary">
+                  <Clock class="w-3 h-3" /> {{ new Date(campaign.scheduledAt).toLocaleString() }}
+                </span>
+                <span v-else>—</span>
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-center justify-end gap-2">
+                  <button @click="openLogs(campaign.id)"
+                          class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="Visualizza Log">
+                    <Eye class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status !== 'RUNNING' && campaign.status !== 'DRAFT'" @click="openReschedule(campaign)"
+                          class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="Rischedula">
+                    <Calendar class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'DRAFT' || campaign.status === 'SCHEDULED'" @click="openWizard(campaign)"
+                          class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant transition-colors" title="Modifica">
+                    <Edit2 class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status !== 'RUNNING'" @click="handleDelete(campaign.id)"
+                          class="p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error transition-colors" title="Elimina">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'DRAFT' || campaign.status === 'PAUSED'" @click="store.startCampaign(campaign.id)"
+                          class="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors" title="Avvia">
+                    <Play class="w-4 h-4" />
+                  </button>
+                  <button v-if="campaign.status === 'RUNNING'" @click="store.pauseCampaign(campaign.id)"
+                          class="p-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition-colors" title="Pausa">
+                    <Pause class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Create Campaign Wizard -->
+    <!-- Create/Edit Campaign Wizard -->
     <Teleport to="body">
       <div v-if="showWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showWizard = false">
         <div class="w-full max-w-xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
-          <h3 class="text-lg font-bold text-on-surface mb-6">{{ t('campaigns.create_title') }}</h3>
+          <h3 class="text-lg font-bold text-on-surface mb-6">{{ isEditing ? 'Modifica Campagna' : t('campaigns.create_title') }}</h3>
 
           <!-- Step indicators -->
           <div class="flex gap-2 mb-6">
@@ -82,14 +121,14 @@
           <!-- Step 1: Name -->
           <div v-if="wizardStep === 1" class="space-y-4">
             <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.name_label') }}</label>
-            <input v-model="newCampaign.name" type="text" :placeholder="t('campaigns.name_placeholder')"
+            <input v-model="formData.name" type="text" :placeholder="t('campaigns.name_placeholder')"
                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
           </div>
 
           <!-- Step 2: Template -->
           <div v-if="wizardStep === 2" class="space-y-4">
             <label class="block text-sm font-medium text-on-surface-variant">{{ t('campaigns.template_label') }}</label>
-            <select v-model="newCampaign.templateId"
+            <select v-model="formData.templateId"
                     class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none">
               <option value="" disabled>{{ t('campaigns.template_select') }}</option>
               <option v-for="tmpl in templates" :key="tmpl.id" :value="tmpl.id">{{ tmpl.name }}</option>
@@ -107,12 +146,12 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_min') }}</label>
-                <input v-model.number="newCampaign.delayMin" type="number" min="5" max="300"
+                <input v-model.number="formData.delayMin" type="number" min="5" max="300"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
               <div>
                 <label class="text-xs text-on-surface-variant">{{ t('campaigns.delay_max') }}</label>
-                <input v-model.number="newCampaign.delayMax" type="number" min="10" max="600"
+                <input v-model.number="formData.delayMax" type="number" min="10" max="600"
                        class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
               </div>
             </div>
@@ -123,7 +162,7 @@
           <div v-if="wizardStep === 4" class="space-y-4">
             <label class="block text-sm font-medium text-on-surface-variant">Programmazione (Opzionale)</label>
             <p class="text-xs text-on-surface-variant mb-2">Seleziona data e ora se vuoi che la campagna parta in automatico.</p>
-            <input v-model="newCampaign.scheduledAt" type="datetime-local"
+            <input v-model="formData.scheduledAt" type="datetime-local"
                    class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none" />
           </div>
 
@@ -133,60 +172,101 @@
               {{ wizardStep > 1 ? t('campaigns.btn_back') : t('campaigns.btn_cancel') }}
             </button>
             <button v-if="wizardStep < 4" @click="wizardStep++"
-                    :disabled="wizardStep === 1 && !newCampaign.name || wizardStep === 2 && !newCampaign.templateId"
+                    :disabled="wizardStep === 1 && !formData.name || wizardStep === 2 && !formData.templateId"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg transition-all disabled:opacity-30">
               {{ t('campaigns.btn_next') }}
             </button>
-            <button v-else @click="handleCreate"
+            <button v-else @click="handleSave"
                     class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] transition-all">
-              {{ t('campaigns.btn_create') }}
+              {{ isEditing ? 'Salva' : t('campaigns.btn_create') }}
             </button>
           </div>
         </div>
       </div>
     </Teleport>
 
-    <!-- Logs Modal -->
+    <!-- Reschedule Modal -->
     <Teleport to="body">
-      <div v-if="showLogsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showLogsModal = false">
-        <div class="w-full max-w-3xl bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in max-h-[80vh] flex flex-col">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold text-on-surface">Log Campagna</h3>
-            <button @click="showLogsModal = false" class="p-2 hover:bg-white/10 rounded-lg transition-colors"><X class="w-4 h-4" /></button>
+      <div v-if="showRescheduleModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showRescheduleModal = false">
+        <div class="w-full max-w-sm bg-surface-container-high border border-white/10 rounded-2xl p-6 shadow-2xl animate-slide-in">
+          <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+            <Calendar class="w-5 h-5 text-primary" />
+            Rischedula Campagna
+          </h3>
+          <p class="text-sm text-on-surface-variant mb-4">Seleziona la nuova data e ora di avvio.</p>
+          
+          <input v-model="rescheduleForm.scheduledAt" type="datetime-local" required
+                 class="w-full p-3 bg-black/30 border border-white/10 rounded-lg text-on-surface text-sm focus:border-primary outline-none mb-6" />
+                 
+          <div class="flex justify-end gap-3">
+            <button @click="showRescheduleModal = false" class="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
+              Annulla
+            </button>
+            <button @click="handleReschedule" class="px-5 py-2 bg-primary text-on-primary font-semibold rounded-lg shadow-[0_0_15px_rgba(37,211,102,0.3)] transition-all">
+              Conferma
+            </button>
           </div>
+        </div>
+      </div>
+    </Teleport>
 
-          <div class="overflow-auto flex-1">
-            <table class="w-full text-left text-sm">
-              <thead class="text-on-surface-variant border-b border-white/10">
-                <tr>
-                  <th class="pb-3 px-2">Data</th>
-                  <th class="pb-3 px-2">Contatto</th>
-                  <th class="pb-3 px-2">Telefono</th>
-                  <th class="pb-3 px-2">Stato</th>
-                  <th class="pb-3 px-2">Errore</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-white/5">
-                <tr v-if="logsLoading" class="animate-pulse">
-                  <td colspan="5" class="py-6 text-center text-on-surface-variant">Caricamento log...</td>
-                </tr>
-                <tr v-else-if="campaignLogs.length === 0">
-                  <td colspan="5" class="py-6 text-center text-on-surface-variant">Nessun log trovato per questa campagna.</td>
-                </tr>
-                <tr v-else v-for="log in campaignLogs" :key="log.id" class="hover:bg-white/5">
-                  <td class="py-3 px-2 text-on-surface-variant">{{ new Date(log.createdAt).toLocaleString() }}</td>
-                  <td class="py-3 px-2 font-medium">{{ log.contact?.name }}</td>
-                  <td class="py-3 px-2 text-on-surface-variant">{{ log.contact?.fullPhone }}</td>
-                  <td class="py-3 px-2">
-                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full"
-                          :class="log.status === 'SENT' ? 'bg-primary/20 text-primary' : 'bg-error/20 text-error'">
-                      {{ log.status }}
-                    </span>
-                  </td>
-                  <td class="py-3 px-2 text-error text-xs">{{ log.errorReason || '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
+    <!-- Improved Logs Modal -->
+    <Teleport to="body">
+      <div v-if="showLogsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="showLogsModal = false">
+        <div class="w-full max-w-4xl h-[80vh] flex flex-col bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl animate-slide-in overflow-hidden">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <Eye class="w-5 h-5 text-primary" />
+              Log Campagna
+            </h3>
+            <button @click="showLogsModal = false" class="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+          
+          <!-- Terminal-like content -->
+          <div class="flex-1 overflow-auto p-4 font-mono text-sm">
+            <div v-if="logsLoading" class="flex items-center justify-center h-full">
+              <div class="animate-pulse text-gray-500">Caricamento log in corso...</div>
+            </div>
+            <div v-else-if="campaignLogs.length === 0" class="flex items-center justify-center h-full text-gray-500">
+              Nessun log disponibile per questa campagna.
+            </div>
+            <div v-else class="space-y-1">
+              <!-- Logs Table Header -->
+              <div class="grid grid-cols-12 gap-4 pb-2 border-b border-white/10 text-gray-400 font-semibold mb-2 px-2">
+                <div class="col-span-3">Timestamp</div>
+                <div class="col-span-3">Destinatario</div>
+                <div class="col-span-2">Stato</div>
+                <div class="col-span-4">Dettagli</div>
+              </div>
+              
+              <!-- Logs Rows -->
+              <div v-for="log in campaignLogs" :key="log.id" class="grid grid-cols-12 gap-4 py-2 px-2 hover:bg-white/5 rounded transition-colors items-start">
+                <div class="col-span-3 text-gray-500 text-xs mt-0.5">
+                  {{ new Date(log.createdAt).toLocaleString() }}
+                </div>
+                <div class="col-span-3 text-gray-300 truncate" :title="log.contact?.name">
+                  {{ log.contact?.name || log.contactId }} <br/>
+                  <span class="text-xs text-gray-500">{{ log.contact?.fullPhone }}</span>
+                </div>
+                <div class="col-span-2">
+                  <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold"
+                        :class="log.status === 'SENT' ? 'bg-primary/20 text-primary' : log.status === 'FAILED' ? 'bg-error/20 text-error' : 'bg-white/10 text-gray-300'">
+                    <CheckCircle2 v-if="log.status === 'SENT'" class="w-3.5 h-3.5" />
+                    <AlertCircle v-else-if="log.status === 'FAILED'" class="w-3.5 h-3.5" />
+                    <Clock v-else class="w-3.5 h-3.5" />
+                    {{ log.status }}
+                  </span>
+                </div>
+                <div class="col-span-4 text-xs text-gray-400 break-words">
+                  <div v-if="log.errorReason" class="text-error/90 whitespace-pre-wrap">{{ log.errorReason }}</div>
+                  <div v-else-if="log.status === 'SENT'" class="text-primary/70">Messaggio inviato correttamente. ID: {{ log.wuzapiMsgId }}</div>
+                  <div v-else>In attesa di elaborazione...</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -196,7 +276,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, inject } from 'vue'
-import { Plus, Play, Pause, Eye, X, Clock } from 'lucide-vue-next'
+import { Plus, Play, Pause, Eye, X, Clock, Edit2, Trash2, Calendar, CheckCircle2, AlertCircle } from 'lucide-vue-next'
 import { useI18n } from '#i18n'
 import { useCampaignsStore } from '~/stores/campaigns'
 
@@ -204,9 +284,15 @@ const { t } = useI18n()
 const store = useCampaignsStore()
 
 const showWizard = ref(false)
+const isEditing = ref(false)
 const wizardStep = ref(1)
 const templates = ref<any[]>([])
-const newCampaign = ref({ name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' })
+
+const initialForm = { id: '', name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' }
+const formData = ref({ ...initialForm })
+
+const showRescheduleModal = ref(false)
+const rescheduleForm = ref({ id: '', scheduledAt: '' })
 
 const showLogsModal = ref(false)
 const logsLoading = ref(false)
@@ -227,6 +313,61 @@ async function openLogs(campaignId: string) {
   }
 }
 
+function openWizard(campaign?: any) {
+  wizardStep.value = 1
+  if (campaign) {
+    isEditing.value = true
+    formData.value = {
+      id: campaign.id,
+      name: campaign.name,
+      templateId: campaign.templateId,
+      delayMin: campaign.delayMin,
+      delayMax: campaign.delayMax,
+      scheduledAt: campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : ''
+    }
+  } else {
+    isEditing.value = false
+    formData.value = { ...initialForm }
+  }
+  showWizard.value = true
+}
+
+function openReschedule(campaign: any) {
+  rescheduleForm.value = {
+    id: campaign.id,
+    scheduledAt: campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : ''
+  }
+  showRescheduleModal.value = true
+}
+
+async function handleReschedule() {
+  if (!rescheduleForm.value.scheduledAt) {
+    addToast('Inserisci una data e ora valida', 'error')
+    return
+  }
+  
+  try {
+    await store.updateCampaign(rescheduleForm.value.id, {
+      scheduledAt: new Date(rescheduleForm.value.scheduledAt).toISOString()
+    })
+    addToast('Campagna rischedulata', 'success')
+    showRescheduleModal.value = false
+  } catch (e: any) {
+    addToast(e.data?.message || 'Errore durante la rischedulazione', 'error')
+  }
+}
+
+async function handleDelete(id: string) {
+  if (confirm('Sei sicuro di voler eliminare questa campagna? Verranno eliminati anche tutti i log associati.')) {
+    try {
+      await store.deleteCampaign(id)
+      addToast('Campagna eliminata', 'success')
+    } catch (e: any) {
+      addToast(e.data?.message || 'Errore durante l\'eliminazione', 'error')
+    }
+  }
+}
+
 function formatWhatsAppText(text: string) {
   if (!text) return ''
   
@@ -244,7 +385,7 @@ function formatWhatsAppText(text: string) {
 }
 
 const selectedTemplatePreview = computed(() => {
-  const tmpl = templates.value.find(t => t.id === newCampaign.value.templateId)
+  const tmpl = templates.value.find(t => t.id === formData.value.templateId)
   return tmpl ? formatWhatsAppText(tmpl.body) : ''
 })
 
@@ -260,15 +401,27 @@ function statusClass(status: string) {
   return map[status] || map.DRAFT
 }
 
-async function handleCreate() {
-  const payload = { ...newCampaign.value }
+async function handleSave() {
+  const payload: any = { ...formData.value }
+  delete payload.id
+  
   if (!payload.scheduledAt) delete payload.scheduledAt
   else payload.scheduledAt = new Date(payload.scheduledAt).toISOString()
 
-  await store.createCampaign(payload)
-  showWizard.value = false
-  wizardStep.value = 1
-  newCampaign.value = { name: '', templateId: '', delayMin: 15, delayMax: 45, scheduledAt: '' }
+  try {
+    if (isEditing.value) {
+      await store.updateCampaign(formData.value.id, payload)
+      addToast('Campagna aggiornata', 'success')
+    } else {
+      await store.createCampaign(payload)
+      addToast('Campagna creata', 'success')
+    }
+    showWizard.value = false
+    wizardStep.value = 1
+    formData.value = { ...initialForm }
+  } catch (e: any) {
+    addToast(e.data?.message || 'Errore durante il salvataggio', 'error')
+  }
 }
 
 onMounted(async () => {

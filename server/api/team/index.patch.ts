@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { name } = body
+  const { name, description, tags } = body
 
   if (!name || name.trim().length === 0) {
     throw createError({ statusCode: 400, message: 'Team name is required' })
@@ -22,7 +22,11 @@ export default defineEventHandler(async (event) => {
 
   const updatedTeam = await prisma.team.update({
     where: { id: authUser.teamId },
-    data: { name: name.trim() }
+    data: {
+      name: name.trim(),
+      description: description,
+      tags: tags
+    }
   })
 
   return { success: true, team: updatedTeam }
