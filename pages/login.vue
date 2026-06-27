@@ -67,6 +67,24 @@
           <span v-if="loading">Accesso in corso...</span>
           <span v-else>Accedi</span>
         </button>
+        <div class="mt-6">
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-black/10 dark:border-white/10"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-surface-container-lowest/80 dark:bg-[#1a1b1e] text-on-surface-variant">Oppure</span>
+            </div>
+          </div>
+          <div class="mt-6">
+            <a href="/api/auth/oauth/login" class="w-full flex justify-center py-3 px-4 border border-black/10 dark:border-white/10 rounded-xl shadow-sm bg-surface-container hover:bg-black/5 dark:hover:bg-white/5 text-sm font-medium text-on-surface transition-colors">
+              <svg class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6ZM12 16.5C9.52 16.5 7.5 14.48 7.5 12C7.5 9.52 9.52 7.5 12 7.5C14.48 7.5 16.5 9.52 16.5 12C16.5 14.48 14.48 16.5 12 16.5Z" fill="currentColor"/>
+              </svg>
+              Accedi con SSO / PocketID
+            </a>
+          </div>
+        </div>
       </form>
 
       <div class="mt-8 text-center text-sm text-on-surface-variant font-medium">

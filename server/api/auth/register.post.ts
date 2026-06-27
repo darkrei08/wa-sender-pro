@@ -4,12 +4,14 @@ import { signJWT } from '../../utils/jwt'
 import { setCookie, readBody, createError, defineEventHandler, getRequestIP } from 'h3'
 import { z } from 'zod'
 import { securityLog } from '~/lib/security-logger'
+import { jwtVerify } from 'jose'
 
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
-  teamName: z.string().optional()
+  teamName: z.string().optional(),
+  inviteToken: z.string().optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -22,7 +24,24 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Formato dati non valido' })
   }
   
-  const { email, password, name, teamName } = parsed.data
+  const { email, password, name, teamName, inviteToken } = parsed.data
+
+  let targetTeamId: string | null = null
+  let assignedRole: any = 'OWNER'
+
+  if (inviteToken) {
+    try {
+      const appSecret = process.env.APP_SECRET || 'fallback-secret-min-32-chars-long!'
+      const secretKey = new TextEncoder().encode(appSecret)
+      const { payload } = await jwtVerify(inviteToken, secretKey)
+      if (payload.teamId && payload.role) {
+        targetTeamId = payload.teamId as string
+        assignedRole = payload.role
+      }
+    } catch (e) {
+      throw createError({ statusCode: 400, message: 'Link invito non valido o scaduto.' })
+    }
+  }
 
   // Controlla se esiste già l'utente
   const existingUser = await prisma.user.findUnique({ where: { email } })
@@ -34,15 +53,18 @@ export default defineEventHandler(async (event) => {
   const usersCount = await prisma.user.count()
   const isSuperAdmin = usersCount === 0
 
-  // Crea il Team (Agenzia/Workspace)
-  const team = await prisma.team.create({
-    data: { name: teamName || `Team di ${name}` }
-  })
+  if (!targetTeamId) {
+    // Crea il Team (Agenzia/Workspace)
+    const team = await prisma.team.create({
+      data: { name: teamName || `Team di ${name}` }
+    })
+    targetTeamId = team.id
+  }
 
   // Hash password
   const passwordHash = await bcrypt.hash(password, 10)
 
-  // Crea Utente con ruolo OWNER nel Team
+  // Crea Utente con ruolo assegnato nel Team
   const user = await prisma.user.create({
     data: {
       email,
@@ -51,8 +73,8 @@ export default defineEventHandler(async (event) => {
       isSuperAdmin,
       memberships: {
         create: {
-          teamId: team.id,
-          role: 'OWNER'
+          teamId: targetTeamId,
+          role: assignedRole
         }
       }
     }
@@ -61,8 +83,8 @@ export default defineEventHandler(async (event) => {
   // Genera JWT
   const token = await signJWT({ 
     userId: user.id, 
-    teamId: team.id, 
-    role: 'OWNER',
+    teamId: targetTeamId, 
+    role: assignedRole,
     isSuperAdmin 
   })
 
@@ -80,6 +102,6 @@ export default defineEventHandler(async (event) => {
 
   return { 
     success: true, 
-    user: { id: user.id, email: user.email, name: user.name, teamId: team.id } 
+    user: { id: user.id, email: user.email, name: user.name, teamId: targetTeamId } 
   }
 })

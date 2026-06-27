@@ -35,7 +35,7 @@
           />
         </div>
 
-        <div>
+        <div v-if="!inviteToken">
           <label class="block text-sm font-medium mb-1.5 text-on-surface-variant">Nome Agenzia / Team</label>
           <input 
             v-model="teamName" 
@@ -118,8 +118,11 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const colorMode = useColorMode()
+
+const inviteToken = ref((route.query.invite as string) || '')
 
 const toggleColorMode = () => {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
@@ -130,7 +133,8 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
   teamName: z.string().optional(),
   email: z.string().email('Indirizzo email non valido'),
-  password: z.string().min(6, 'La password deve contenere almeno 6 caratteri')
+  password: z.string().min(6, 'La password deve contenere almeno 6 caratteri'),
+  inviteToken: z.string().optional()
 })
 
 const handleRegister = async () => {
@@ -142,7 +146,8 @@ const handleRegister = async () => {
       name: name.value,
       teamName: teamName.value,
       email: email.value,
-      password: password.value
+      password: password.value,
+      inviteToken: inviteToken.value || undefined
     })
   } catch (err: any) {
     if (err instanceof z.ZodError) {
@@ -158,9 +163,10 @@ const handleRegister = async () => {
       method: 'POST',
       body: { 
         name: name.value,
-        teamName: teamName.value,
+        teamName: inviteToken.value ? undefined : teamName.value,
         email: email.value, 
-        password: password.value 
+        password: password.value,
+        inviteToken: inviteToken.value || undefined
       }
     })
 

@@ -1,14 +1,28 @@
 <template>
   <div class="p-8 h-full flex flex-col">
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
       <div>
         <h2 class="text-3xl font-bold text-on-surface">{{ t('nav.team') }}</h2>
-        <p class="text-on-surface-variant mt-1">Gestisci i membri del tuo team e i loro ruoli.</p>
+        <p class="text-on-surface-variant mt-1">Gestisci i dettagli del team e i suoi membri.</p>
       </div>
-      <button @click="showInviteModal = true" class="px-5 py-2.5 bg-primary hover:bg-primary-fixed-dim text-surface font-semibold rounded-lg transition-colors flex items-center gap-2">
+      <button @click="showInviteModal = true" class="px-5 py-2.5 bg-primary hover:bg-primary-fixed-dim text-surface font-semibold rounded-lg transition-colors flex items-center gap-2 shrink-0">
         <UserPlus class="w-5 h-5" />
         Invita Utente
       </button>
+    </div>
+
+    <!-- Team Details Form -->
+    <div class="bg-surface-container/50 backdrop-blur-md border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-xl mb-8">
+      <h3 class="text-lg font-bold text-on-surface mb-4">Informazioni Team</h3>
+      <form @submit.prevent="updateTeam" class="flex gap-4 items-end">
+        <div class="flex-1 max-w-md">
+          <label class="block text-sm font-medium text-on-surface-variant mb-1">Nome del Team</label>
+          <input v-model="teamName" type="text" required class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
+        </div>
+        <button type="submit" :disabled="updatingTeam" class="px-5 py-2.5 bg-surface-variant hover:bg-white/5 text-on-surface font-semibold rounded-lg transition-colors disabled:opacity-50">
+          {{ updatingTeam ? 'Salvataggio...' : 'Salva' }}
+        </button>
+      </form>
     </div>
 
     <!-- Members Table -->
@@ -63,19 +77,11 @@
             </div>
             
             <form @submit.prevent="inviteUser" class="p-6 space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-1">Nome Completo</label>
-                <input v-model="inviteForm.name" required type="text" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
-              </div>
+              <p class="text-sm text-on-surface-variant mb-4">Verrà inviata un'email all'indirizzo inserito con un link (valido 48h) per completare la registrazione e unirsi al team.</p>
               
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">Email</label>
                 <input v-model="inviteForm.email" required type="email" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-1">Password Iniziale</label>
-                <input v-model="inviteForm.password" required type="password" class="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary transition-colors text-on-surface">
               </div>
 
               <div>
@@ -86,6 +92,9 @@
                 </select>
               </div>
 
+              <div v-if="inviteSuccess" class="p-3 bg-primary/10 text-primary text-sm rounded-lg border border-primary/20 break-all">
+                {{ inviteSuccess }}
+              </div>
               <div v-if="inviteError" class="p-3 bg-error/10 text-error text-sm rounded-lg border border-error/20">
                 {{ inviteError }}
               </div>
@@ -94,7 +103,7 @@
                 <button type="button" @click="showInviteModal = false" class="px-5 py-2.5 text-on-surface-variant hover:bg-white/5 rounded-lg transition-colors font-medium">Annulla</button>
                 <button type="submit" :disabled="inviting" class="px-5 py-2.5 bg-primary hover:bg-primary-fixed-dim text-surface rounded-lg transition-colors font-semibold flex items-center gap-2 disabled:opacity-50">
                   <Loader2 v-if="inviting" class="w-4 h-4 animate-spin" />
-                  Invita
+                  Invia Invito
                 </button>
               </div>
             </form>
@@ -115,13 +124,41 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const addToast = inject('addToast') as Function
 
+const teamName = ref('')
+const updatingTeam = ref(false)
+
 const members = ref<any[]>([])
 const loading = ref(true)
 
 const showInviteModal = ref(false)
 const inviting = ref(false)
 const inviteError = ref('')
-const inviteForm = ref({ name: '', email: '', password: '', role: 'AGENT' })
+const inviteSuccess = ref('')
+const inviteForm = ref({ email: '', role: 'AGENT' })
+
+const fetchTeam = async () => {
+  try {
+    const res = await $fetch<{ team: any }>('/api/team')
+    teamName.value = res.team?.name || ''
+  } catch (e: any) {
+    console.error('Error fetching team', e)
+  }
+}
+
+const updateTeam = async () => {
+  updatingTeam.value = true
+  try {
+    const res = await $fetch('/api/team', {
+      method: 'PATCH',
+      body: { name: teamName.value }
+    })
+    addToast('Team aggiornato', 'success')
+  } catch (e: any) {
+    addToast(e.data?.message || 'Errore durante l\'aggiornamento del team', 'error')
+  } finally {
+    updatingTeam.value = false
+  }
+}
 
 const fetchMembers = async () => {
   loading.value = true
@@ -137,16 +174,23 @@ const fetchMembers = async () => {
 
 const inviteUser = async () => {
   inviteError.value = ''
+  inviteSuccess.value = ''
   inviting.value = true
   try {
-    await $fetch('/api/auth/invite', {
+    const res: any = await $fetch('/api/auth/invite', {
       method: 'POST',
       body: inviteForm.value
     })
-    addToast('Utente invitato con successo!', 'success')
-    showInviteModal.value = false
-    inviteForm.value = { name: '', email: '', password: '', role: 'AGENT' }
-    await fetchMembers()
+    
+    // Mostriamo il token se generato localmente (es. no SMTP)
+    if (res.inviteToken) {
+      inviteSuccess.value = 'Link invito (SMTP disabilitato): /register?invite=' + res.inviteToken
+      addToast('Token d\'invito generato', 'info')
+    } else {
+      addToast('Invito inviato con successo!', 'success')
+      showInviteModal.value = false
+      inviteForm.value = { email: '', role: 'AGENT' }
+    }
   } catch (e: any) {
     inviteError.value = e.data?.message || 'Errore durante l\'invito'
   } finally {
@@ -167,6 +211,7 @@ const removeMember = async (id: string) => {
 }
 
 onMounted(() => {
+  fetchTeam()
   fetchMembers()
 })
 </script>
