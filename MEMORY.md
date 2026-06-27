@@ -174,6 +174,12 @@ After fixing the QR code generation, the user reported that scanning the code wo
 - **Controllo Codice**: Compilazione con successo (`npm run build` / `typecheck`) per prevenire bug, eseguendo sviluppo con strict pattern.
 - **Release**: Versioni incrementate a `v2.2.7` e `v2.2.8` e rilasciate sul branch di produzione.
 
+## [Session State Snapshot] - 2026-06-27 16:50:00
+WaForge Project Update - Fixes:
+1. **Profile UI & i18n**: Left-aligned the profile block in `pages/profile.vue` by removing `mx-auto`. Added missing `profile.title` string to `it.json` and `en.json`.
+2. **Template Variables UI**: Fixed the placeholder legend in `pages/templates.vue` from `{{Name}}` to `{Name}` to match the actual variable interpolation engine in `whatsapp-engine.ts`.
+3. **Fetch Body Error**: Refactored `apiCall` in `lib/whatsapp-engine.ts` to use `$fetch` instead of native `fetch`. This resolves the `TypeError: Body is unusable: Body has already been read` error that occurred when requests were retried or redirected by the engine, which caused the native `Response.text()` to throw and log as `FAILED` in campaign histories.
+
 ## [2026-06-27 17:03:00] GOWA Integration
 - Aggiunti modelli WhatsAppConversation e WhatsAppScheduledMessage a schema.prisma.
 - Creato GowaClient (lib/gowa-client.ts) per interazione Cloud API.
